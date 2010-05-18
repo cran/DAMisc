@@ -21,8 +21,5 @@ Maintainer: Dave Armstrong <davearmstrong.ps@gmail.com>
 }
 \references{
 Brambor, T., W.R. Clark and M. Golder.  (2006) Understanding Interaction Models: Improving Empirical Analyses.  Political Analysis 14, 63-82.\cr
-
-Firth, D. (2000) Quasi-variances in Xlisp-Stat and on the web. Journal of Statistical Software 5.4, 1–13. \cr
-
-Firth, D. (2003) Overcoming the reference category problem in the presentation of statistical models. Sociological Methodology 33, 1–18.\cr
+Berrym, W., M. Golder and D. Milton.  (2012) 
 }

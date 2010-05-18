@@ -3,16 +3,24 @@
 \title{Conditional Effects Plots for Interactions in Linear Models}
 \description{Generates two conditional effects plots for two interacted continuous covariates in linear models.}
 \usage{
-DAintfun2(obj, varnames, name.stem = "cond_eff", plot.type = "screen")
+DAintfun2(obj, varnames, rug=TRUE, ticksize=-.03, hist=FALSE, hist.col="gray75", 
+	nclass=c(10, 10), scale.hist=.5, border=NA, name.stem = "cond_eff", plot.type = "screen")
 }
 \arguments{
   \item{obj}{A model object of class `lm'}
   \item{varnames}{A two-element character vector where each element is the name of a variable involved in a two-way interaction.}
+  \item{rug}{Logical indicating whether a rug plot should be included.}
+  \item{ticksize}{A scalar indicating the size of ticks in the rug plot (if included) positive values put the rug inside the plotting region and negative values put it outside the plotting region.}
+  \item{hist}{Logical indicating whether a histogram of the x-variable should be included in the plotting region.}
+  \item{hist.col}{Argument to be passed to \code{polygon} indicating the color of the histogram bins.}
+  \item{nclass}{vector of two integers indicating the number of bins in the two histograms, which will be passed to \code{hist}.}
+  \item{scale.hist}{A scalar in the range (0,1] indicating how much vertical space in the plotting region the histogram should take up.}
+  \item{border}{Argument passed to \code{polygon} indicating how the border of the histogram bins should be printed (\code{NA} for no border).} 
   \item{name.stem}{A character string giving filename to which the appropriate extension will be appended}
   \item{plot.type}{One of `pdf', `png', `eps' or `screen', where the one of the first three will produce two graphs starting with \code{name.stem} written to the appropriate file type and the third will produce graphical output on the screen.}
 }
 \details{
-This function produces graphs along the lines suggested by Brambor, Clark and Golder (2006), that show the conditional effect of one variable in an interaction given the values of the conditioning variable.  This is an alternative to the methods proposed by John Fox in his \code{effects} package, upon which this function depends heavily.\cr\cr
+This function produces graphs along the lines suggested by Brambor, Clark and Golder (2006) and Berry, Golder and Milton (2012), that show the conditional effect of one variable in an interaction given the values of the conditioning variable.  This is an alternative to the methods proposed by John Fox in his \code{effects} package, upon which this function depends heavily.\cr\cr
 Specifically, if the model is \cr
 \deqn{y_{i} = b_{0} + b_{1}x_{i1} + b_{2}x_{i2} + b_{3}x_{i1}\times x_{i2} + \ldots + e_{i},}{y = b[0] + b[1]x1 + b[2]x2 + b[3]x1*x2 + ... + e[i],}\cr
 this function plots calculates the conditional effect of \eqn{X_{1}}{X1} given \eqn{X_{2}}{X2}\cr
@@ -25,11 +33,12 @@ for different values of \eqn{X_{2}}{X2} and then switches the places of \eqn{X_{
 }
 \references{
 Brambor, T., W.R. Clark and M. Golder.  (2006) Understanding Interaction Models: Improving Empirical Analyses.  Political Analysis 14, 63-82.\cr
+Berry, W., M. Golder and D. Milton.  (2012)  Improving Tests of Theories Positing Interactions.  Journal of Politics.
 }
 \author{Dave Armstrong (UW-Milwaukee, Department of Political Science)}
 \examples{
 data(InteractionEx)
 mod <- lm(y ~ x1*x2 + z, data=InteractionEx)
-DAintfun2(mod, c("x1", "x2"))
+DAintfun2(mod, c("x1", "x2"), hist=TRUE, scale.hist=.3)
 
 }
