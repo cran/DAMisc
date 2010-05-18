@@ -1,7 +1,7 @@
 \name{simPredpolr}
 \alias{simPredpolr}
 \title{Calculate Predictions for Proportional Odds Logistic Regression}
-\description{Calculates predicted probabilities from models of class \code{\link{polr}} from a model object and a vector of coefficient values.  This is an auxiliary function used in \code{\link{pre}} if \code{sim=TRUE}.}
+\description{Calculates predicted probabilities from models of class \code{polr} from a model object and a vector of coefficient values.  This is an auxiliary function used in \code{pre} if \code{sim=TRUE}.}
 \usage{
 simPredpolr(object, coefs, n.coef) 
 }

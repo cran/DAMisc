@@ -1,16 +1,26 @@
-# Default NAMESPACE created by R
-# Remove the previous line if you edit this file
-
-# Export all names
-exportPattern(".")
-
-# Import all packages listed as Imports or Depends
-import(
-  effects,
-  sm,
-  MASS,
-  nnet,
-  splines,
-  pscl,
-  gdata
+export(
+	BGMtest, 
+	binfit, 
+	btscs,
+	cat2Table,
+	crTest,
+	crSpanTest, 
+	DAintfun,
+	DAintfun2, 
+	glmChange, 
+	intEff,
+	intQualQuant,
+	mnlSig, 
+	multiChange,
+	ordChange,
+	panel.2cat,
+	panel.ci, 
+	poisGOF, 
+	pre, 
+	prepanel.ci, 
+	scaleDataFrame,
+	searchVarLabels, 
+	ziChange
 )
+
+S3method(print, pre)

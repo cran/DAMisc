@@ -1,8 +1,9 @@
 Package: DAMisc
 Type: Package
 Title: Dave Armstrong's Miscellaneous Functions
-Version: 1.1
-Depends: effects, sm, MASS, nnet, splines, pscl, gdata
+Version: 1.2
+Depends: car, effects, lattice, sm, MASS, nnet, splines, pscl, gdata,
+        xtable
 Date: 2010-05-18
 Author: Dave Armstrong (UW-Milwaukee, Department of Political Science)
 Maintainer: Dave Armstrong <armstrod@uwm.edu>
@@ -12,6 +13,7 @@ Description: This package contains a miscellaneous set of functions I
         interpretation of GLMs.
 License: GPL (>= 2)
 LazyLoad: yes
-Packaged: 2012-03-14 15:34:03 UTC; armstrod
+Packaged: 2013-04-09 19:59:06 UTC; armstrod
+NeedsCompilation: no
 Repository: CRAN
-Date/Publication: 2012-03-14 16:33:59
+Date/Publication: 2013-04-09 22:44:16

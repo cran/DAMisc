@@ -1,17 +1,17 @@
 \name{ordChange}
 \alias{ordChange}
 \title{Maximal First Differences for Proportional Odds Logistic Regression Models}
-\description{For objects of class \code{\link{polr}}, it calculates the change in predicted probabilities, for maximal discrete changes in all covariates holding all other variables constant at typical values.}
+\description{For objects of class \code{polr}, it calculates the change in predicted probabilities, for maximal discrete changes in all covariates holding all other variables constant at typical values.}
 \usage{
 ordChange(obj, data, typical.dat=NULL)
 }
 \arguments{
-  \item{obj}{A model object of class \code{\link{zeroinfl}}.}
+  \item{obj}{A model object of class \code{polr}.}
   \item{data}{Data frame used to fit \code{object}.}
   \item{typical.dat}{Data frame with a single row containing values at which to hold variables constant when calculating first differences.  These values will be passed to \code{predict}, so factors must take on a single value, but have all possible levels as their levels attribute.}
 }
 \details{
-The function calculates the changes in predicted probabilities for maximal discrete changes in the covariates for objects of class \code{\link{polr}}.  This function works with polynomials specified with the \code{\link{poly}} function.  It also works with multiplicative interactions of the covariates by virtue of the fact that it holds all other variables at typical values.  By default, typical values are the median for quantitative variables and the mode for factors. The way the function works with factors is a bit different.  The function identifies the two most different levels of the factor and calculates the change in predictions for a change from the level with the smallest prediction to the level with the largest prediction.  
+The function calculates the changes in predicted probabilities for maximal discrete changes in the covariates for objects of class \code{polr}.  This function works with polynomials specified with the \code{poly} function.  It also works with multiplicative interactions of the covariates by virtue of the fact that it holds all other variables at typical values.  By default, typical values are the median for quantitative variables and the mode for factors. The way the function works with factors is a bit different.  The function identifies the two most different levels of the factor and calculates the change in predictions for a change from the level with the smallest prediction to the level with the largest prediction.  
 }
 \value{
 A list with the following elements:

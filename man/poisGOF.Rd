@@ -6,7 +6,7 @@
 poisGOF(obj)
 }
 \arguments{
-  \item{obj}{A model object of class \code{\link{glm}} (with \code{family=poisson}).}
+  \item{obj}{A model object of class \code{glm} (with \code{family=poisson}).}
 }
 \value{
 A 2x2 data frame with rows representing the different types of statistics (Deviance and Chi-squared) and columns representing the test statistic and p-value. 

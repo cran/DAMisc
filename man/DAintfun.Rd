@@ -3,13 +3,17 @@
 \title{Surface Plots for Two-Way Interactions}
 \description{Makes surface plots to display interactions between two continuous variables}
 \usage{
-DAintfun(obj, varnames, theta = 45, phi = 10)
+DAintfun(obj, varnames, theta = 45, phi = 10, xlab=NULL, ylab=NULL, zlab=NULL,...)
 }
 \arguments{
-  \item{obj}{A model object of class 'lm'}
+  \item{obj}{A model object of class \code{lm}}
   \item{varnames}{A two-element character vector where each element is the name of a variable involved in a two-way interaction.}
   \item{theta}{Angle defining the azimuthal viewing direction to be passed to \code{persp}}
   \item{phi}{Angle defining the colatitude viewing direction to be passed to \code{persp}}
+  \item{xlab}{Optional label to put on the x-axis, otherwise if \code{NULL}, it will take the first element of \code{varnames}}
+  \item{ylab}{Optional label to put on the y-axis, otherwise if \code{NULL}, it will take the second element of \code{varnames}}
+  \item{zlab}{Optional label to put on the z-axis, otherwise if \code{NULL}, it will be \sQuote{Predictions}}
+  \item{...}{Other arguments to be passed down to the initial call to \code{persp}}
 }
 \details{
 This function makes a surface plot of an interaction between two continuous covariates.  If the model is \cr
@@ -17,6 +21,9 @@ This function makes a surface plot of an interaction between two continuous cova
 this function plots \eqn{b_{1}x_{i1} + b_{2}x_{i2} + b_{3}x_{i1}\times x_{i2}}{b[1]x1 + b[2]x2 + b[3]x1*x2} for values over the range of \eqn{X_{1}}{X1} and \eqn{X_{2}}{X2}.  The highest 75\%, 50\% and 25\% of the bivariate density of \eqn{X_{1}}{X1} and \eqn{X_{2}}{X2} (as calculated by \code{sm.density} from the \code{sm} package) are colored in with colors of increasing gray-scale. 
 }
 \value{
+\item{x1}{Values of the first element of \code{varnames} used to make predictions.}
+\item{x2}{Values of the second element of \code{varnames} used to make predictions.}
+\item{pred}{The predictions based on the values \code{x1} and \code{x2}.}
 \item{graph}{A graph is produced, but no other information is returned.}
 }
 \author{Dave Armstrong (UW-Milwaukee, Department of Political Science)}
