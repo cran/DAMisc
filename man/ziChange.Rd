@@ -24,7 +24,8 @@ A list with the following elements:
 library(pscl)
 ## Example from the help file for zeroinfl in the pscl package
 data("bioChemists", package = "pscl")
-fm_zinb <- zeroinfl(art ~ fem + mar + kid5 + phd + ment | fem + mar + kid5 + phd + ment, data = bioChemists, dist = "negbin")
+fm_zinb <- zeroinfl(art ~ fem + mar + kid5 + phd + ment |
+    fem + mar + kid5 + phd + ment, data = bioChemists, dist = "negbin")
 typical.bioChem <- data.frame(
 	kid5 = 2,
 	mar = factor(1, levels=1:2, labels=levels(bioChemists$mar))

@@ -1,26 +1,50 @@
-export(
-	BGMtest, 
-	binfit, 
-	btscs,
-	cat2Table,
-	crTest,
-	crSpanTest, 
-	DAintfun,
-	DAintfun2, 
-	glmChange, 
-	intEff,
-	intQualQuant,
-	mnlSig, 
-	multiChange,
-	ordChange,
-	panel.2cat,
-	panel.ci, 
-	poisGOF, 
-	pre, 
-	prepanel.ci, 
-	scaleDataFrame,
-	searchVarLabels, 
-	ziChange
-)
-
+import(car)
+import(effects)
+import(grid)
+import(lattice)
+import(sm)
+import(MASS)
+import(nnet)
+import(splines)
+import(pscl)
+import(gdata)
+import(xtable)
 S3method(print, pre)
+S3method(print, mnlfit)
+S3method(print, ordfit)
+export(
+    binfit,
+    btscs,
+    cat2Table,
+    combTest,
+    DAintfun,
+    DAintfun2,
+    glmChange,
+    glmChange2,
+    intEff,
+    mnlSig,
+    mnlAveEffPlot,
+    mnlChange,
+    mnlChange2,
+    ordChange,
+    ordChange2,
+    mnlfit,
+    ordfit,
+    ordAveEffPlot,
+    poisGOF,
+    pre,
+    searchVarLabels,
+    simPredpolr, 
+    ziChange,
+    BGMtest,
+    intQualQuant,
+    panel.transci, 
+    panel.doublerug, 
+    panel.ci, 
+    prepanel.ci,
+    panel.2cat,
+    crTest,
+    crSpanTest,
+    scaleDataFrame,
+    outXT, 
+    aveEffPlot) 
