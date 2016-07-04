@@ -1,3 +1,19 @@
+importFrom("grDevices", "col2rgb", "dev.off", "pdf", "png",
+             "postscript", "rgb", "setEPS")
+importFrom("graphics", "abline", "axis", "lines", "par", "persp",
+             "plot", "points", "polygon")
+importFrom("stats", "AIC", "BIC", "alias", "anova", "as.formula",
+             "coef", "coefficients", "contrasts", "deviance", "dnorm",
+             "family", "fitted", "formula", "lm", "loess", "logLik",
+             "median", "model.frame", "model.matrix", "model.response",
+             "na.omit", "p.adjust", "pcauchy", "pchisq", "pf", "plogis",
+             "pnorm", "predict", "pt", "qt", "quantile", "relevel",
+             "residuals", "residuals.glm", "sd", "terms", "update",
+             "var", "vcov", "gaussian", "glm")
+importFrom("utils", "combn")
+importFrom("boot", "cv.glm")
+importFrom("VGAM", "pgumbel")
+importFrom("QRM", "pGumbel")
 import(car)
 import(effects)
 import(grid)
@@ -12,6 +28,7 @@ import(xtable)
 S3method(print, pre)
 S3method(print, mnlfit)
 S3method(print, ordfit)
+S3method(print, ordChange)
 export(
     binfit,
     btscs,
@@ -47,4 +64,7 @@ export(
     crSpanTest,
     scaleDataFrame,
     outXT, 
-    aveEffPlot) 
+    aveEffPlot,
+    NKnots,
+    NKnotsTest,
+    testLoess) 
