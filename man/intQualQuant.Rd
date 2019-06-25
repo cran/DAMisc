@@ -1,5 +1,6 @@
 \name{intQualQuant}
 \alias{intQualQuant}
+\alias{print.iqq}
 \title{Predictions for Factor-Numeric Interactions in Linear Models}
 \description{This function works on linear models with a single interaction between a continuous (numeric) variable and a factor.  The output is a data frame that gives the predicted effect of moving from each category to each other category of the factor over the range of values of the continuous conditioning variable.}
 \usage{
@@ -39,7 +40,7 @@ For \code{type} = \sQuote{slopes} and \code{plot} = \code{FALSE}, A character ma
 	\item{Pr(>|t|)}{The two-sided p-value.}
 For \code{type} = \sQuote{slopes} and \code{plot} = \code{TRUE}, a lattice display is returned
 }
-\author{Dave Armstrong (UW-Milwaukee, Department of Political Science)}
+\author{Dave Armstrong}
 \examples{
 library(car)
 data(Prestige)

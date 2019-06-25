@@ -1,9 +1,9 @@
 \name{aveEffPlot}
 \alias{aveEffPlot}
 \title{Average Effect Plot for Generalized Linear Models}
-\description{For objects of class \code{glm}, it calculates the change the average predicted probability for a hypothetical candidate set of values of a covariate.}
+\description{For objects of class \code{glm}, it calculates the change the average predicted probability (like the one calculated by \code{glmChange2}) for a hypothetical candidate set of values of a covariate.}
 \usage{
-aveEffPlot(obj, varname, data, R=1500, nvals=25, plot=TRUE,...) 
+aveEffPlot(obj, varname, data, R=1500, nvals=25, plot=TRUE, returnSim=FALSE, ...) 
 }
 \arguments{
   \item{obj}{A model object of class \code{glm}.}
@@ -12,6 +12,7 @@ aveEffPlot(obj, varname, data, R=1500, nvals=25, plot=TRUE,...)
   \item{R}{Number of simulations to perform.}
   \item{nvals}{Number of evaluation points at which the average probability will be calculated.}
   \item{plot}{Logical indicating whether plot should be returned, or just data (if \code{FALSE}).}
+  \item{returnSim}{Logical indicating whether simulated predicted probabilities should be returned.}
   \item{...}{Other arguments to be passed down to \code{xyplot}.}
 }
 \details{
@@ -20,7 +21,7 @@ The function plots the average effect of a model covariate, for objects of class
 \value{
 A plot or a data frame
 }
-\author{Dave Armstrong (UW-Milwaukee, Department of Political Science)}
+\author{Dave Armstrong}
 \examples{
 data(france)
 p <- poly(france$lrself, 2)

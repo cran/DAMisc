@@ -1,7 +1,7 @@
 importFrom("grDevices", "col2rgb", "dev.off", "pdf", "png",
              "postscript", "rgb", "setEPS")
 importFrom("graphics", "abline", "axis", "lines", "par", "persp",
-             "plot", "points", "polygon")
+             "plot", "points", "polygon", "box", "segments", "strwidth")
 importFrom("stats", "AIC", "BIC", "alias", "anova", "as.formula",
              "coef", "coefficients", "contrasts", "deviance", "dnorm",
              "family", "fitted", "formula", "lm", "loess", "logLik",
@@ -9,27 +9,72 @@ importFrom("stats", "AIC", "BIC", "alias", "anova", "as.formula",
              "na.omit", "p.adjust", "pcauchy", "pchisq", "pf", "plogis",
              "pnorm", "predict", "pt", "qt", "quantile", "relevel",
              "residuals", "residuals.glm", "sd", "terms", "update",
-             "var", "vcov", "gaussian", "glm")
-importFrom("utils", "combn")
+             "var", "vcov", "gaussian", "glm", "aggregate", "cooks.distance", 
+             "cor", "hatvalues", "naprint", "nlminb", "pbinom", "printCoefmat",
+            "qnorm","rnorm")
 importFrom("boot", "cv.glm")
+importFrom("coda", "as.mcmc")
+importFrom("latticeExtra", "useOuterStrips")
+importFrom("games", "clarke")
+importFrom("AICcmodavg", "AICc")
+importFrom("fANCOVA", "loess.as")
+importFrom("VGAM", "yeo.johnson")
+importFrom("optiscale", "opscale")
+importFrom("utils", "combn")
 importFrom("VGAM", "pgumbel")
 importFrom("QRM", "pGumbel")
-import(car)
 import(effects)
+import(car)
+import(rstan)
 import(grid)
 import(lattice)
-import(sm)
 import(MASS)
 import(nnet)
 import(splines)
 import(pscl)
 import(gdata)
 import(xtable)
+S3method(plot, diffci)
+S3method(print, diffci)
+S3method(plot, balsos)
+S3method(summary, balsos)
 S3method(print, pre)
+S3method(plot, loess)
 S3method(print, mnlfit)
+S3method(print, glmc2)
+S3method(print, iqq)
 S3method(print, ordfit)
 S3method(print, ordChange)
+S3method(central, factor)
+S3method(central, numeric)
+S3method(searchVarLabels, data.frame)
+S3method(searchVarLabels, tbl_df)
+S3method(inspect, data.frame)
+S3method(inspect, tbl_df)
+S3method(probgroup, polr)
+S3method(probgroup, multinom)
 export(
+    test.balsos,
+    tscslag, 
+    makeHypSurv,
+    poisfit,
+    probgroup, 
+    probgroup.polr, 
+    probgroup.multinom, 
+    oc2plot, 
+    DAintfun3,
+    testGAMint,
+    probci,
+    cv.lo2,
+    yj_trans, 
+    alsosDV,
+    plot.loess, 
+    changeSig,
+    loessDeriv,
+    balsos,
+    inspect,
+    inspect.data.frame, 
+    inspect.tbl_df,
     binfit,
     btscs,
     cat2Table,
@@ -51,20 +96,24 @@ export(
     poisGOF,
     pre,
     searchVarLabels,
-    simPredpolr, 
+    searchVarLabels.data.frame,
+    searchVarLabels.tbl_df,
+    simPredpolr,
     ziChange,
     BGMtest,
     intQualQuant,
-    panel.transci, 
-    panel.doublerug, 
-    panel.ci, 
+    panel.transci,
+    panel.doublerug,
+    panel.ci,
     prepanel.ci,
     panel.2cat,
     crTest,
     crSpanTest,
     scaleDataFrame,
-    outXT, 
+    outXT,
     aveEffPlot,
     NKnots,
     NKnotsTest,
-    testLoess) 
+    testLoess, 
+    secondDiff, 
+    outEff)
