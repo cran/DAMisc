@@ -1,8 +1,8 @@
-4cd6ad22ed266f03045539d4363a059c *DESCRIPTION
-83a458cbd890ef2d19f991d3e43f39f9 *NAMESPACE
-bea84ae78f434618e9ba0633df66597e *R/DAMisc_functions.R
+5c47d6c44d4f5b30f4e4d94d05a8a0ee *DESCRIPTION
+00f207bcd36c0131615c4682786564a6 *NAMESPACE
+5d3d87a216c86ad3f3b1092523a7eeb3 *R/DAMisc_functions.R
 8f57e592f9341bd899707dfc3da7106e *R/fox_utility.R
-59d7c5db1b480944db29e3d159c219ac *README.md
+a1678e5618582fe681bb55c94be6fcec *README.md
 d95422e2a4cf932fd291cd19b2cf507d *data/InteractionEx.rda
 9cce8403ccc968df8dc944461f0d524c *data/aclp.rda
 c273108a55b1eff8f37cee7d4d8e00bd *data/france.rda
@@ -23,7 +23,7 @@ b5d9a7161a59c8c3edbe0da4c5568d1a *man/binfit.Rd
 bb8d1d46a18384513fa5d4f570448a56 *man/cat2Table.Rd
 da742757c867d435c9ca0dcf30d0125c *man/changeSig.Rd
 5a1f5e2a80c86ac70cee99ba2b6afbee *man/combTest.Rd
-e81deaccbbb458b0cf1753785b096efc *man/crSpanTest.Rd
+4fb5832627b6406da0b69780c22da506 *man/crSpanTest.Rd
 72f21f31d4dc94883b7aae75c47c3bc9 *man/crTest.Rd
 0644adc2af4c245d014d6c8141d30613 *man/cv.lo2.Rd
 c99bd7d8b3f2a28957ba5f3ad1bbf860 *man/france.Rd
