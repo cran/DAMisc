@@ -1,7 +1,7 @@
-dc08fa0285d0d1ebdb2a0f05f77828b9 *DESCRIPTION
-d5739cb1c0b49b37d62e38b592e556c2 *NAMESPACE
-d69bb4e3dcce2bf8c0e4237a9c7652f3 *R/DAMisc_functions.R
-9eba074e0a99e07f34ffe4e131530062 *R/damisc-package.R
+227dff78c039f1b32a460cee3ae48adf *DESCRIPTION
+6f5e7dc8c652275f6a06b9c7006741b2 *NAMESPACE
+adce0969c00261ab08db6b1df2ece0b5 *R/DAMisc_functions.R
+ae50f8f0aa717124bb0116d9e4ccc666 *R/damisc-package.R
 8f57e592f9341bd899707dfc3da7106e *R/fox_utility.R
 d95422e2a4cf932fd291cd19b2cf507d *data/InteractionEx.rda
 9cce8403ccc968df8dc944461f0d524c *data/aclp.rda
@@ -67,6 +67,7 @@ db6690bfa944e9fbcf718bdce94e8658 *man/panel.2cat.Rd
 e7034242bb429fd4927ebe537a1c0e34 *man/panel.ci.Rd
 e76a1ec9c36ad3aefbde447c3a132ab8 *man/panel.doublerug.Rd
 ba7c6ddf1d2dcb995ec013767000dc02 *man/panel.transci.Rd
+a4332a40edf8cf5e376ea6c592d6909a *man/pgumbel.Rd
 7d31ba74832f6ccc2feaa04a74354f9f *man/plot.balsos.Rd
 8f90ad7050f3ece47b444ace727cb68a *man/plot.loess.Rd
 1f1ff039b4e454af86618f8576ffffac *man/plot.secdiff.Rd
@@ -93,5 +94,6 @@ abada8fa71eb8fc9fc0afad77eeb5d72 *man/test.balsos.Rd
 6afee4476a42c8004c708b0b35f50e87 *man/testLoess.Rd
 ddf5736959c00dd823d251ead58a3367 *man/testNL.Rd
 d5dbe12fcfa9902f485adb755dcd4979 *man/tscslag.Rd
+fb5d60b1d84533834ee62fafe24a1b57 *man/yeo.johnson.Rd
 f17c6a3555fece992d04fc8510706f97 *man/yj_trans.Rd
 d7b96989779c9a237102a6f609df761b *man/ziChange.Rd
