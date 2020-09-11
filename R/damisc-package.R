@@ -66,8 +66,9 @@ NULL
 #' residuals residuals.glm sd terms update
 #' var vcov gaussian glm aggregate cooks.distance 
 #' cor hatvalues naprint nlminb pbinom printCoefmat
-#' qnorm rnorm binomial
-#' @importFrom boot cv.glm
+#' qnorm rnorm binomial get_all_vars t.test 
+#' chisq.test reorder
+#' @importFrom boot cv.glm boot 
 #' @importFrom coda as.mcmc
 #' @importFrom latticeExtra useOuterStrips
 #' @importFrom AICcmodavg AICc
@@ -82,16 +83,29 @@ NULL
 #' @importFrom xtable xtable print.xtable
 #' @importFrom ggplot2 ggplot geom_point aes geom_segment 
 #' theme_bw labs ggtitle geom_hline geom_ribbon geom_line
-#' theme aes_string
+#' theme aes_string geom_bar labs ggtitle coord_polar 
+#' theme_void geom_text aes_string facet_wrap
 #' @importFrom car Anova
-#' @importFrom gdata trim
 #' @importFrom grid gpar grid.segments unit
 #' @importFrom lattice histogram packet.number panel.abline panel.arrows 
 #' panel.lines panel.points panel.polygon panel.rug panel.segments 
 #' panel.superpose simpleKey trellis.focus trellis.par.get 
 #' trellis.unfocus xyplot
-NULL
+#' @importFrom haven is.labelled as_factor
+#' @importFrom survey svymean svyvar svyquantile svyby svytable svychisq
+#' svydesign cv svytotal
+#' @importFrom janitor adorn_totals adorn_percentages adorn_pct_formatting 
+#' adorn_ns adorn_title
+#' @importFrom tibble as_tibble
+#' @importFrom tidyr pivot_wider
+#' @importFrom magrittr "%>%"
+#' @importFrom dplyr filter group_by summarise n mutate select 
+#' ungroup bind_cols
+#' @importFrom tidyselect all_of
+#' @importFrom rlang .data
+#' @importFrom jtools svycor
 
+NULL
 
 
 
