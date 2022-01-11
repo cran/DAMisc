@@ -4,10 +4,16 @@
 \alias{scaleDataFrame}
 \title{Standardize quantitative variables in a data frame}
 \usage{
-scaleDataFrame(data)
+scaleDataFrame(data, numsd = 1, nvals_fac = 11, exclude = NULL)
 }
 \arguments{
 \item{data}{A data frame.}
+
+\item{numsd}{Number of standard deviations to divide by - defaults to 1.}
+
+\item{nvals_fac}{Number of unique values required to standardize - variables with fewer than `nvals_fac` unique values will not be standardized.}
+
+\item{exclude}{A character vector of names of variables to exclude from the standardization.}
 }
 \value{
 A data frame with standardized quantitative variables

@@ -1,4 +1,7 @@
 
+
+utils::globalVariables("where") 
+
 pGumbel <- function (q, mu = 0, sigma = 1){
   stopifnot(sigma > 0)
   exp(-exp(-((q - mu)/sigma)))
@@ -262,7 +265,11 @@ combTest <- function(obj){
 #' @param ylab Optional label to put on the y-axis, otherwise if \code{NULL},
 #' it will take the second element of \code{varnames}
 #' @param zlab Optional label to put on the z-axis, otherwise if \code{NULL},
-#' it will be \sQuote{Predictions}
+#' it will be \sQuote{Predictions}. 
+#' @param adjustY Scalar indicating a constant that should be added to all of 
+#' fitted values.  Defaults to 0. 
+#' @param plot Logical indicating whether the plot should be returned.  If 
+#' \code{FALSE}, the data are returned instead.
 #' @param hcols Vector of four colors to color increasingly high density areas
 #' @param ... Other arguments to be passed down to the initial call to
 #' \code{persp}
@@ -282,8 +289,8 @@ combTest <- function(obj){
 #' DAintfun(mod, c("x1", "x2"))
 #' 
 DAintfun <-
-function (obj, varnames, theta = 45, phi = 10, xlab=NULL, ylab=NULL, zlab=NULL,
-    hcols=NULL, ...)
+function (obj, varnames, theta = 45, phi = 10, xlab=NULL, ylab=NULL, 
+          zlab=NULL, adjustY=0, plot=TRUE, hcols=NULL, ...)
 {
     if (length(varnames) != 2) {
         stop("varnames must be a vector of 2 variable names")
@@ -319,6 +326,7 @@ function (obj, varnames, theta = 45, phi = 10, xlab=NULL, ylab=NULL, zlab=NULL,
             sep = "")
         }
         predsurf <- outer(v1.seq, v2.seq, eff.fun)
+        predsurf <- predsurf + adjustY
         cutoff <- quantile(c(dens$z), prob = c(0.25, 0.5,
             0.75))
         pred1 <- predsurf
@@ -327,27 +335,30 @@ function (obj, varnames, theta = 45, phi = 10, xlab=NULL, ylab=NULL, zlab=NULL,
         pred2[dens$z < cutoff[2]] <- NA
         pred3 <- predsurf
         pred3[dens$z < cutoff[3]] <- NA
+      if(plot){  
         persp(v1.seq, v2.seq, predsurf,
-			xlab = ifelse(is.null(xlab), toupper(v1), xlab),
-			ylab = ifelse(is.null(ylab), toupper(v2), ylab),
-            zlab = ifelse(is.null(zlab), toupper("Predictions"), zlab),
-			col = hcols[1], theta = theta, phi = phi,...)
+    			xlab = ifelse(is.null(xlab), toupper(v1), xlab),
+    			ylab = ifelse(is.null(ylab), toupper(v2), ylab),
+          zlab = ifelse(is.null(zlab), toupper("Predictions"), zlab),
+			    col = hcols[1], theta = theta, phi = phi,...)
         par(new = TRUE)
-            persp(v1.seq, v2.seq, pred1, col = hcols[2], axes = FALSE,
+          persp(v1.seq, v2.seq, pred1, col = hcols[2], axes = FALSE,
             xlab = "", ylab = "", zlab = "", theta = theta, phi = phi,
             zlim = c(min(c(predsurf)), max(c(predsurf))), ylim = c(min(v2.seq),
                 max(v2.seq)), xlim = c(min(v1.seq), max(v1.seq)))
         par(new = TRUE)
-        persp(v1.seq, v2.seq, pred2, col = hcols[3], axes = FALSE,
+          persp(v1.seq, v2.seq, pred2, col = hcols[3], axes = FALSE,
             xlab = "", ylab = "", zlab = "", theta = theta, phi = phi,
             zlim = c(min(c(predsurf)), max(c(predsurf))), ylim = c(min(v2.seq),
                 max(v2.seq)), xlim = c(min(v1.seq), max(v1.seq)))
         par(new = TRUE)
-        persp(v1.seq, v2.seq, pred3, col = hcols[4], axes = FALSE,
+          persp(v1.seq, v2.seq, pred3, col = hcols[4], axes = FALSE,
             xlab = "", ylab = "", zlab = "", theta = theta, phi = phi,
             zlim = c(min(c(predsurf)), max(c(predsurf))), ylim = c(min(v2.seq),
                 max(v2.seq)), xlim = c(min(v1.seq), max(v1.seq)))
-	    invisible(list(x1=v1.seq, x2=v2.seq, pred=predsurf))
+      }else{
+        return(list(x1=v1.seq, x2=v2.seq, pred=predsurf))
+      }
     }
 }
 
@@ -437,8 +448,9 @@ DAintfun2 <-
 function (obj, varnames, varcov=NULL, rug = TRUE, ticksize = -0.03, hist = FALSE,
     level=.95, hist.col = "gray75", nclass = c(10, 10), scale.hist = 0.5,
     border = NA, name.stem = "cond_eff",
-	xlab = NULL, ylab=NULL, plot.type = "screen")
+	xlab = NULL, ylab=NULL, plot.type = c("screen", "pdf", "png", "eps", "none"))
 {
+  plot.type <- match.arg(plot.type)
     rseq <- function(x) {
         rx <- range(x, na.rm = TRUE)
         seq(rx[1], rx[2], length = 25)
@@ -471,107 +483,118 @@ function (obj, varnames, varcov=NULL, rug = TRUE, ticksize = -0.03, hist = FALSE
     se.eff2 <- sqrt(diag(a2 %*% varcov %*% t(a2)))
     low2 <- eff2 - qt((1-((1-level)/2)), obj$df.residual) * se.eff2
     up2 <- eff2 + qt((1-((1-level)/2)), obj$df.residual) * se.eff2
-    if (!plot.type %in% c("pdf", "png", "eps", "screen")) {
-        print("plot type must be one of - pdf, png or eps")
+    if(plot.type == "none"){
+      outdf <- data.frame(
+        vals_var2 = s2, 
+        eff_var1 = eff1, 
+        se_var1 = se.eff1,
+        low_var1 = low1, 
+        up_var1 = up1, 
+        vals_var1 = s1, 
+        eff_var2 = eff2, 
+        se_var2 = se.eff2, 
+        low_var2 = low2, 
+        up_var2 = up2)
+      names(outdf) <- gsub("var1", v1, names(outdf))
+      names(outdf) <- gsub("var2", v2, names(outdf))
+      return(outdf)
     }
-    else {
-        if (plot.type == "pdf") {
-            pdf(paste(name.stem, "_", v1, ".pdf", sep = ""),
-                height = 6, width = 6)
+    if (plot.type == "pdf") {
+        pdf(paste(name.stem, "_", v1, ".pdf", sep = ""),
+            height = 6, width = 6)
+    }
+    if (plot.type == "png") {
+        png(paste(name.stem, "_", v1, ".png", sep = ""))
+    }
+    if (plot.type == "eps") {
+        old.psopts <- ps.options()
+        setEPS()
+        postscript(paste(name.stem, "_", v1, ".eps", sep = ""))
+    }
+    if (plot.type == "screen") {
+        oldpar <- par()
+        par(mfrow = c(1, 2))
+    }
+    plot(s2, eff1, type = "n", ylim = range(c(low1, up1)),
+        xlab = ifelse(is.null(xlab), toupper(v2), xlab[1]), ylab = ifelse(is.null(ylab), paste("Conditional Effect of ",
+            toupper(v1), " | ", toupper(v2), sep = ""), ylab[1]))
+    if (hist == TRUE) {
+        rng <- diff(par()$usr[3:4])
+        h2 <- hist(MM[, v2], nclass = nclass[1], plot = FALSE)
+        prop2 <- h2$counts/sum(h2$counts)
+        plot.prop2 <- (prop2/max(prop2)) * rng * scale.hist +
+            par()$usr[3]
+        av2 <- pretty(prop2, n = 3)
+        axis(4, at = (av2/max(prop2)) * rng * scale.hist +
+            par()$usr[3], labels = av2)
+        br2 <- h2$breaks
+        for (i in 1:(length(br2) - 1)) {
+            polygon(x = c(br2[i], br2[(i + 1)], br2[(i +
+              1)], br2[i], br2[i]), y = c(par()$usr[3], par()$usr[3],
+              plot.prop2[i], plot.prop2[i], par()$usr[3]),
+              col = hist.col, border = border)
         }
-        if (plot.type == "png") {
-            png(paste(name.stem, "_", v1, ".png", sep = ""))
+    }
+    if (rug == TRUE) {
+        rug(MM[,v2], ticksize = ticksize)
+    }
+    if (par()$usr[3] < 0 & par()$usr[4] > 0) {
+        abline(h = 0, col = "gray50")
+    }
+    lines(s2, eff1)
+    lines(s2, low1, lty = 2)
+    lines(s2, up1, lty = 2)
+    if (plot.type != "screen") {
+        dev.off()
+    }
+    if (plot.type == "pdf") {
+        pdf(paste(name.stem, "_", v2, ".pdf", sep = ""),
+            height = 6, width = 6)
+    }
+    if (plot.type == "png") {
+        png(paste(name.stem, "_", v2, ".png", sep = ""))
+    }
+    if (plot.type == "eps") {
+        postscript(paste(name.stem, "_", v2, ".eps", sep = ""))
+    }
+    plot(s1, eff2, type = "n", ylim = range(c(low2, up2)),
+        xlab = ifelse(is.null(xlab), toupper(v1), xlab[2]),
+	ylab = ifelse(is.null(ylab), paste("Conditional Effect of ",
+            toupper(v2), " | ", toupper(v1), sep = ""), ylab[2]))
+    if (hist == TRUE) {
+        rng <- diff(par()$usr[3:4])
+        h1 <- hist(MM[,v1], nclass = nclass[2], plot = FALSE)
+        prop1 <- h1$counts/sum(h1$counts)
+        plot.prop1 <- (prop1/max(prop1)) * rng * scale.hist +
+            par()$usr[3]
+        av1 <- pretty(prop1, n = 3)
+        axis(4, at = (av1/max(prop1)) * rng * scale.hist +
+            par()$usr[3], labels = av1)
+        br1 <- h1$breaks
+        for (i in 1:(length(br1) - 1)) {
+            polygon(x = c(br1[i], br1[(i + 1)], br1[(i +
+              1)], br1[i], br1[i]), y = c(par()$usr[3], par()$usr[3],
+              plot.prop1[i], plot.prop1[i], par()$usr[3]),
+              col = hist.col, border = border)
         }
-        if (plot.type == "eps") {
-            old.psopts <- ps.options()
-            setEPS()
-            postscript(paste(name.stem, "_", v1, ".eps", sep = ""))
-        }
-        if (plot.type == "screen") {
-            oldpar <- par()
-            par(mfrow = c(1, 2))
-        }
-        plot(s2, eff1, type = "n", ylim = range(c(low1, up1)),
-            xlab = ifelse(is.null(xlab), toupper(v2), xlab[1]), ylab = ifelse(is.null(ylab), paste("Conditional Effect of ",
-                toupper(v1), " | ", toupper(v2), sep = ""), ylab[1]))
-        if (hist == TRUE) {
-            rng <- diff(par()$usr[3:4])
-            h2 <- hist(MM[, v2], nclass = nclass[1], plot = FALSE)
-            prop2 <- h2$counts/sum(h2$counts)
-            plot.prop2 <- (prop2/max(prop2)) * rng * scale.hist +
-                par()$usr[3]
-            av2 <- pretty(prop2, n = 3)
-            axis(4, at = (av2/max(prop2)) * rng * scale.hist +
-                par()$usr[3], labels = av2)
-            br2 <- h2$breaks
-            for (i in 1:(length(br2) - 1)) {
-                polygon(x = c(br2[i], br2[(i + 1)], br2[(i +
-                  1)], br2[i], br2[i]), y = c(par()$usr[3], par()$usr[3],
-                  plot.prop2[i], plot.prop2[i], par()$usr[3]),
-                  col = hist.col, border = border)
-            }
-        }
-        if (rug == TRUE) {
-            rug(MM[,v2], ticksize = ticksize)
-        }
-        if (par()$usr[3] < 0 & par()$usr[4] > 0) {
-            abline(h = 0, col = "gray50")
-        }
-        lines(s2, eff1)
-        lines(s2, low1, lty = 2)
-        lines(s2, up1, lty = 2)
-        if (plot.type != "screen") {
-            dev.off()
-        }
-        if (plot.type == "pdf") {
-            pdf(paste(name.stem, "_", v2, ".pdf", sep = ""),
-                height = 6, width = 6)
-        }
-        if (plot.type == "png") {
-            png(paste(name.stem, "_", v2, ".png", sep = ""))
-        }
-        if (plot.type == "eps") {
-            postscript(paste(name.stem, "_", v2, ".eps", sep = ""))
-        }
-        plot(s1, eff2, type = "n", ylim = range(c(low2, up2)),
-            xlab = ifelse(is.null(xlab), toupper(v1), xlab[2]),
-			ylab = ifelse(is.null(ylab), paste("Conditional Effect of ",
-                toupper(v2), " | ", toupper(v1), sep = ""), ylab[2]))
-        if (hist == TRUE) {
-            rng <- diff(par()$usr[3:4])
-            h1 <- hist(MM[,v1], nclass = nclass[2], plot = FALSE)
-            prop1 <- h1$counts/sum(h1$counts)
-            plot.prop1 <- (prop1/max(prop1)) * rng * scale.hist +
-                par()$usr[3]
-            av1 <- pretty(prop1, n = 3)
-            axis(4, at = (av1/max(prop1)) * rng * scale.hist +
-                par()$usr[3], labels = av1)
-            br1 <- h1$breaks
-            for (i in 1:(length(br1) - 1)) {
-                polygon(x = c(br1[i], br1[(i + 1)], br1[(i +
-                  1)], br1[i], br1[i]), y = c(par()$usr[3], par()$usr[3],
-                  plot.prop1[i], plot.prop1[i], par()$usr[3]),
-                  col = hist.col, border = border)
-            }
-        }
-        if (rug == TRUE) {
-            rug(MM[, v1], ticksize = ticksize)
-        }
-        if (par()$usr[3] < 0 & par()$usr[4] > 0) {
-            abline(h = 0, col = "gray50")
-        }
-        lines(s1, eff2)
-        lines(s1, low2, lty = 2)
-        lines(s1, up2, lty = 2)
-        if (plot.type != "screen") {
-            dev.off()
-        }
-        if (plot.type == "eps") {
-            ps.options <- old.psopts
-        }
-        if (plot.type == "screen") {
-            par <- oldpar
-        }
+    }
+    if (rug == TRUE) {
+        rug(MM[, v1], ticksize = ticksize)
+    }
+    if (par()$usr[3] < 0 & par()$usr[4] > 0) {
+        abline(h = 0, col = "gray50")
+    }
+    lines(s1, eff2)
+    lines(s1, low2, lty = 2)
+    lines(s1, up2, lty = 2)
+    if (plot.type != "screen") {
+        dev.off()
+    }
+    if (plot.type == "eps") {
+        ps.options <- old.psopts
+    }
+    if (plot.type == "screen") {
+        par <- oldpar
     }
 }
 
@@ -595,23 +618,47 @@ function (obj, varnames, varcov=NULL, rug = TRUE, ticksize = -0.03, hist = FALSE
 #' 
 #' @param obj A model object of class \code{glm}.
 #' @param data Data frame used to fit \code{object}.
+#' @param V An optional variance-covariance matrix for the coefficients, if 
+#' \code{NULL}, will be obtained through a call to \code{vcov}. 
 #' @param typical.dat Data frame with a single row containing values at which
 #' to hold variables constant when calculating first differences.  These values
 #' will be passed to \code{predict}, so factors must take on a single value,
 #' but have all possible levels as their levels attribute.
+#' @param change.dat A named list of values over which the variables of interest 
+#' will be changed.  If \code{NULL} or partially specified, unspecified variables
+#' will use \code{diffchange}.  If a categorical variable is specified in here, this 
+#' overrides the \code{catdiff} argument and only the specified contrast will be 
+#' generated.  
 #' @param diffchange A string indicating the difference in predictor values to
 #' calculate the discrete change.  \code{range} gives the difference between
 #' the minimum and maximum, \code{sd} gives plus and minus one-half standard
 #' deviation change around the median and \code{unit} gives a plus and minus
 #' one-half unit change around the median.
+#' @param outcome For quantitative variables, should the difference over the range of chosen values be calculated 
+#' (the default) or should the maximum probability difference over the range be 
+#' calculated.  These will be the same for single-term quantitative variables, 
+#' but could be different for multi-term variables, like splines and polynomials. 
+#' @param n number of units of \code{diffchange} to move.  Only active for \code{unit}
+#' or \code{sd}. 
+#' @param catdiff String identifying how differences in factor variables
+#' is handled.  Options are \code{"all"} in which case all pairwise differences are
+#' returned, or \code{"biggest"} in which case the biggest difference is returned. 
 #' @param sim Logical indicating whether simulated confidence bounds on the
 #' difference should be calculated and presented.
 #' @param R Number of simulations to perform if \code{sim} is \code{TRUE}
+#' @param qtiles Quantiles to calculate if \code{sim=TRUE}. 
+#' @param adjust String identifying how range should be changed if it goes out of
+#' the bounds of the observed data.  Trimming will simply truncate the size of 
+#' the change to make it fit in bounds.  Shifting will shift the interval so 
+#' both ends are in bounds. If the shifted interval is wider than the range of
+#' the data, the change will be truncated to the range of the data. 
 #' @return A list with the following elements: \item{diffs}{A matrix of
 #' calculated first differences} \item{minmax}{A matrix of values that were
 #' used to calculate the predicted changes}
 #' @author Dave Armstrong
 #' 
+#' @importFrom dplyr across rename left_join bind_rows
+#' @importFrom stats delete.response nobs
 #' @export
 #' 
 #' @examples
@@ -626,98 +673,188 @@ function (obj, varnames, varcov=NULL, rug = TRUE, ticksize = -0.03, hist = FALSE
 #' glmChange(left.mod, data=france, typical.dat=typical.france)
 #' 
 glmChange <-
-function (obj, data, typical.dat = NULL, diffchange = c("range", "sd", "unit"), sim=FALSE, R=1000)
+function (obj, 
+          data, 
+          V = NULL,
+          typical.dat = NULL, 
+          change.dat = NULL, 
+          diffchange = c("range", "sd", "unit"), 
+          outcome = c("diff", "maxdiff"),
+          n = 1, 
+          catdiff = c("biggest", "all"), 
+          sim=FALSE, 
+          R=1000, 
+          qtiles=c(.025, .975), 
+          adjust=c("none", "shift", "trim"))
 {
-    vars <- all.vars(formula(obj))[-1]
-    if(any(!(vars %in% names(data)))){
-        vars <- vars[-which(!vars %in% names(data))]
+  diffchange <- match.arg(diffchange)
+  catdiff <- match.arg(catdiff)
+  adj <- match.arg(adjust)
+  outcome <- match.arg(outcome)
+  allvars <- all.vars(formula(obj))
+  data <- data %>% select(all_of(allvars)) %>% na.omit
+  vars <- names(c(unlist(sapply(allvars, function(x)grep(x, attr(terms(obj), "term.labels"))))))
+  dv <- setdiff(allvars, vars)
+  if(any(!(vars %in% names(data)))){
+      vars <- vars[-which(!vars %in% names(data))]
+  }
+  rn <- vars
+  var.classes <- sapply(vars, function(x) class(data[[x]]))
+  levs <- obj$xlevels
+  meds <- vector(mode="list", length=length(vars))
+  names(meds) <- vars 
+  for(i in 1:length(vars)){
+    if(is.factor(data[[vars[i]]])){
+      if(vars[i] %in% names(typical.dat)){
+        meds[[vars[i]]] <- typical.dat[[vars[i]]]
+      }else{
+        tab <- table(data[[vars[i]]])
+        meds[[vars[i]]] <- factor(names(tab)[which.max(tab)], levels = levels(data[[vars[i]]]))
+      }
     }
-    rn <- vars
-    var.classes <- sapply(vars, function(x) class(data[[x]]))
-    minmax <- lapply(vars, function(x) c(NA, NA))
-    meds <- lapply(vars, function(x) NA)
-    names(minmax) <- names(meds) <- vars
-    levs <- obj$xlevels
-    if (length(levs) > 0) {
-        for (i in 1:length(levs)) {
-            tmp.levs <- paste(names(levs)[i], unlist(levs[i]),
-                sep = "")
-            col.inds <- match(tmp.levs, names(obj$coef))
-            if (length(grep("1$", names(obj$coef)[col.inds])) >
-                0) {
-                col.inds <- c(col.inds[which(is.na(col.inds))],
-                  col.inds[grep("1$", names(col.inds))])
-                names(col.inds) <- gsub("1$", "", names(col.inds))
-                col.inds <- col.inds[match(tmp.levs, names(col.inds))]
-            }
-            tmp.coefs <- obj$coef[col.inds]
-            tmp.coefs <- obj$coef[match(tmp.levs, names(obj$coef))]
-            tmp.coefs[which(is.na(tmp.coefs))] <- 0
-            mm <- c(which.min(tmp.coefs), which.max(tmp.coefs))
-            minmax[[names(levs)[i]]] <- factor(levs[[i]][mm],
-                levels = levs[[i]])
-            tmp.tab <- table(data[[names(levs)[i]]])
-            meds[[names(levs)[i]]] <- factor(names(tmp.tab)[which.max(tmp.tab)],
-                levels = levs[[i]])
+    else{
+      if(vars[i] %in% names(typical.dat)){
+        meds[[vars[i]]] <- typical.dat[[vars[i]]]
+      }else{
+        meds[[vars[i]]] <- median(data[[vars[i]]], na.rm=TRUE)
+      }
+    }
+  }
+  prob.dat <- list()
+  k <- 1
+  for(i in 1:length(vars)){
+    tmp <- meds
+    tmp <- tmp[-which(names(tmp) == vars[i])]
+    if(!is.factor(data[[vars[i]]])){
+      if(vars[i] %in% names(change.dat)){
+        dlist <- list(change.dat[[vars[i]]])
+        names(dlist) <- vars[i]
+        prob.dat[[k]] <- do.call(expand.grid, c(tmp, dlist))
+        names(prob.dat)[k] <- vars[i]
+        prob.dat[[k]]$fit <- predict(obj, newdata=prob.dat[[k]], type="response")
+        prob.dat[[k]]$focal <- vars[i]
+        prob.dat[[k]]$side <- factor(c(1,2), labels=c("Low", "High"))
+        k <- k+1
+    }else{
+        rg <- switch(diffchange, 
+                     range = range(data[[vars[i]]], na.rm=TRUE), 
+                     sd = median(data[[vars[i]]], na.rm=TRUE) + 
+                       c(-n*.5, n*.5)*sd(data[[vars[i]]], na.rm=TRUE), 
+                     unit = median(data[[vars[i]]], na.rm=TRUE) + c(-n*.5, n*.5))
+        if(adj == "trim"){
+          rg[1] <- max(min(data[[vars[i]]], na.rm=TRUE), rg[1])
+          rg[2] <- min(max(data[[vars[i]]], na.rm=TRUE), rg[2])
         }
-    }
-    vars <- vars[sapply(minmax, function(x) is.na(x[1]))]
-	if(length(vars) > 0){
-        mmc <- match.arg(diffchange)
-        for (i in 1:length(vars)) {
-            if(mmc == "range"){
-            minmax[[vars[i]]] <- range(data[[vars[i]]], na.rm = TRUE)
-            }
-            if(mmc == "sd"){
-              tmp <- median(data[[vars[i]]], na.rm = TRUE) + c(-.5,.5)*sd(data[[vars[i]]], na.rm=TRUE)
-              tmp[1] <- ifelse(tmp[1] < min(data[[vars[i]]], na.rm=TRUE), min(data[[vars[i]]], na.rm=TRUE), tmp[1])
-              tmp[2] <- ifelse(tmp[2] > max(data[[vars[i]]], na.rm=TRUE), max(data[[vars[i]]], na.rm=TRUE), tmp[2])
-              minmax[[vars[i]]] <- tmp
-            }
-            if(mmc == "unit"){
-            minmax[[vars[i]]] <- median(data[[vars[i]]], na.rm = TRUE) + c(-.5,.5)
-            }
-            meds[[vars[i]]] <- median(data[[vars[i]]], na.rm = TRUE)
+        if(adj == "shift"){
+          if(diff(rg) > diff(range(data[[vars[i]]])))rg <- range(data[[vars[i]]])
+          if(rg[1] < min(data[[vars[i]]])){rg <- rg + abs(diff(c(rg[1], min(data[[vars[i]]]))))}
+          if(rg[2] > max(data[[vars[i]]])){rg <- rg - abs(diff(c(rg[2], max(data[[vars[i]]]))))}
         }
-    }
-    tmp.df <- do.call(data.frame, c(lapply(meds, function(x) rep(x,
-        length(meds) * 2)), stringsAsFactors=TRUE))
-    if (!is.null(typical.dat)) {
-        notin <- which(!(names(typical.dat) %in% names(tmp.df)))
-        if (length(notin) > 0) {
-            cat("The following variables in typical.dat were not found in the prediction data: ",
-                names(typical.dat)[notin], "\n\n", sep = "")
-            typical.dat <- typical.dat[, -notin]
+        
+        if(outcome == "maxdiff"){
+          tmpd <- list(seq(rg[1], rg[2], length=1000))
+          names(tmpd) <- vars[i]
+          tmp2 <- do.call(data.frame, c(tmp, tmpd))
+          tmpfit <- predict(obj, newdata=tmp2, type="link")
+          tmprg <- tmpd[[1]][c(which.min(tmpfit), which.max(tmpfit))]
+          rg <- sort(tmprg)
+          
         }
-        for (j in 1:ncol(typical.dat)) {
-            tmp.df[[names(typical.dat)[j]]] <- typical.dat[1,
-                j]
-            meds[names(typical.dat)[j]] <- as.numeric(typical.dat[1,
-                j])
+        dlist <- list(rg)
+        names(dlist) <- vars[i]
+        prob.dat[[k]] <- do.call(expand.grid, c(tmp, dlist))
+        names(prob.dat)[k] <- vars[i]
+        prob.dat[[k]]$fit <- predict(obj, newdata=prob.dat[[k]], type="response")
+        prob.dat[[k]]$focal <- vars[i]
+        prob.dat[[k]]$side <- factor(c(1,2), labels=c("Low", "High"))
+        k <- k+1
+      }
+    }else{
+      if(vars[i] %in% names(change.dat)){
+        dlist <- list(change.dat[[vars[i]]])
+        names(dlist) <- vars[i]
+        prob.dat[[k]] <- do.call(expand.grid, c(tmp, dlist))
+        names(prob.dat)[k] <- vars[i]
+        prob.dat[[k]]$fit <- predict(obj, newdata=prob.dat[[k]], type="response")
+        prob.dat[[k]] <- tmpdat[c(mn,mx), ]
+        
+        prob.dat[[k]]$focal <- vars[i]
+        prob.dat[[k]]$side <- factor(c(1,2), labels=c("Low", "High"))
+        k <- k+1
+      }else{
+        if(catdiff == "biggest"){
+          dl <- list(factor(levs[[vars[i]]], levels=levels(data[[vars[i]]])))
+          names(dl) <- vars[i]
+          tmpdat <- do.call(expand.grid, c(tmp, dl))
+          tmpdat$fit <- predict(obj, newdata=tmpdat, type="response")
+          mn <- which.min(tmpdat$fit)
+          mx <- which.max(tmpdat$fit)
+          prob.dat[[k]] <- tmpdat[c(mn,mx), ]
+          names(prob.dat)[k] <- vars[i]
+          prob.dat[[k]]$focal <- vars[i]
+          prob.dat[[k]]$side <- factor(c(1,2), labels=c("Low", "High"))
+          k <- k+1
+        }else{
+          combs <- combn(length(levs[[vars[i]]]), 2)
+          tmplevs <- apply(combs, c(1,2), function(x)levs[[vars[i]]][x])
+          for(j in 1:ncol(tmplevs)){
+            dlist <- list(factor(tmplevs[,j], levels=levels(data[[vars[i]]])))
+            names(dlist) <- vars[i]
+            prob.dat[[k]] <- do.call(expand.grid, c(tmp, dlist))
+            names(prob.dat)[k] <- paste(vars[i], j, sep="_")
+            prob.dat[[k]]$fit <- predict(obj, newdata=prob.dat[[k]], type="response")
+            prob.dat[[k]]$focal <- vars[i]
+            prob.dat[[k]]$side <- factor(c(1,2), labels=c("Low", "High"))
+            k <- k+1
+            }            
+          }
         }
+        
+        }
+  } # close loop over i
+  probw <- lapply(seq_along(prob.dat), function(i){ 
+    prob.dat[[i]] %>% 
+      select(all_of(c("focal", "side", "fit", prob.dat[[i]]$focal[1]))) %>% 
+      rename("val" = prob.dat[[i]]$focal[1]) %>% 
+      mutate(v = names(prob.dat)[i]) %>% 
+      pivot_wider(names_from="side", values_from=c("val", "fit")) %>% 
+      mutate(diff = .data$fit_High-.data$fit_Low,
+             across(all_of(c("val_Low", "val_High")), ~sprintf("%.3f",.x)))
+  })
+  probw <- do.call(bind_rows, probw)
+  if(sim){
+    if(is.null(V)){
+      V <- vcov(obj)
+    }else{
+      if(nrow(V) != ncol(V) | ncol(V) != length(coef(obj))){
+        stop("Provided variance covariance matrix is of wrong dimensions\n")
+      }
     }
-    inds <- seq(1, nrow(tmp.df), by = 2)
-    for (j in 1:length(minmax)) {
-        tmp.df[inds[j]:(inds[j] + 1), j] <- minmax[[j]]
-    }
-    preds <- matrix(predict(obj, newdata = tmp.df, type = "response"),
-        ncol = 2, byrow = TRUE)
-    diffs <- cbind(preds, apply(preds, 1, diff))
-    colnames(diffs) <- c("min", "max", "diff")
-    rownames(diffs) <- rn
-    minmax.mat <- do.call(data.frame, c(minmax, stringsAsFactors=TRUE))
-    minmax.mat <- rbind(do.call(data.frame, c(meds, stringsAsFactors=TRUE)), minmax.mat)
-    rownames(minmax.mat) <- c("typical", "min", "max")
-	if(sim){
-    preds <- predict(obj, newdata = tmp.df, type = "link", se.fit=TRUE)
-	res <- sapply(1:R, function(x)apply(matrix(family(obj)$linkinv(with(preds, rnorm(length(preds$fit), fit, se.fit))), ncol=2, byrow=TRUE), 1, diff))
-	cis <- t(apply(res, 1, quantile, c(.025, .975)))
-	colnames(cis) <- c("lower", "upper")
-	diffs <- cbind(diffs, cis)
-	}
-    ret <- list(diffs = diffs, minmax = minmax.mat)
-    class(ret) <- "change"
-    return(ret)
+    B <- MASS::mvrnorm(R, coef(obj), V)
+    se.dat <- lapply(prob.dat, function(x){
+      dvdat <- na.omit(data)[dv][1,, drop=FALSE]
+      rownames(dvdat) <- NULL
+      x <- cbind(x,dvdat)
+      tt <- terms(obj)
+      Terms <- delete.response(tt)
+      m <- model.frame(Terms, x, xlev = obj$xlevels)
+      X <- model.matrix(Terms, m, contrasts.arg = obj$contrasts)
+      p <- family(obj)$linkinv(X %*% t(B))
+      ap <- apply(p, 2, diff)
+      q <- quantile(ap, probs=qtiles)
+      names(q) <- paste("q_", gsub("\\%", "", names(q)), sep="")
+      q <- do.call(data.frame, as.list(q))
+      q$focal <- x$focal[1]
+      q
+    })
+    se.dat <- do.call(rbind, se.dat)
+    se.dat$v <- rownames(se.dat)
+    rownames(se.dat) <- NULL
+    probw <- left_join(probw, se.dat)
+  }  
+  probw <- probw %>% select(-c("v"))
+  attr(probw, "meds") <- do.call(data.frame, meds)
+  return(probw)
 }
 
 
@@ -1214,6 +1351,7 @@ mnlAveEffPlot <- function(obj, varname, data, R=1500, nvals=25, plot=TRUE,...){
 #' the minimum and maximum, \code{sd} gives plus and minus one-half standard
 #' deviation change around the median and \code{unit} gives a plus and minus
 #' one-half unit change around the median.
+#' @param n Number of \code{diffchange} units to change. 
 #' @param sim Logical indicating whether simulated confidence bounds should be
 #' produced.
 #' @param R Number of simulations to perform if \code{sim = TRUE}
@@ -1240,7 +1378,7 @@ mnlAveEffPlot <- function(obj, varname, data, R=1500, nvals=25, plot=TRUE,...){
 #' 
 mnlChange <-
 function (obj, data, typical.dat = NULL, diffchange=c("range", "sd", "unit"),
- 	sim=TRUE, R=1500){
+ 	n = 1, sim=TRUE, R=1500){
 	y <- model.response(model.frame(obj))
     vars <- all.vars(formula(obj))[-1]
     if(any(!(vars %in% names(data)))){
@@ -1282,13 +1420,13 @@ function (obj, data, typical.dat = NULL, diffchange=c("range", "sd", "unit"),
         minmax[[vars[i]]] <- range(data[[vars[i]]], na.rm = TRUE)
 		}
 		if(mmc == "sd"){
-		  tmp <- median(data[[vars[i]]], na.rm = TRUE) + c(-.5,.5)*sd(data[[vars[i]]], na.rm=TRUE)
+		  tmp <- median(data[[vars[i]]], na.rm = TRUE) + c(-.5,.5)*n*sd(data[[vars[i]]], na.rm=TRUE)
 		  tmp[1] <- ifelse(tmp[1] < min(data[[vars[i]]], na.rm=TRUE), min(data[[vars[i]]], na.rm=TRUE), tmp[1])
 		  tmp[2] <- ifelse(tmp[2] > max(data[[vars[i]]], na.rm=TRUE), max(data[[vars[i]]], na.rm=TRUE), tmp[2])
 		  minmax[[vars[i]]] <- tmp
 		}
 		if(mmc == "unit"){
-        minmax[[vars[i]]] <- median(data[[vars[i]]], na.rm = TRUE) + c(-.5,.5)
+        minmax[[vars[i]]] <- median(data[[vars[i]]], na.rm = TRUE) + c(-.5,.5)*n
 		}
         meds[[vars[i]]] <- median(data[[vars[i]]], na.rm = TRUE)
     }
@@ -1366,6 +1504,7 @@ return(ret)
 #' calculate the discrete change. \code{sd} gives plus and minus one-half
 #' standard deviation change around the median and \code{unit} gives a plus and
 #' minus one-half unit change around the median.
+#' @param n Number of \code{diffchange} units to change. 
 #' @param R Number of simulations.
 #' @return A list with elements: \item{mean}{Average effect of the variable for
 #' each category of the dependent variable.} \item{lower}{Lower 95 percent
@@ -1384,7 +1523,7 @@ return(ret)
 #' 
 #' 
 mnlChange2 <-
-  function (obj, varnames, data, diffchange=c("unit", "sd"), R=1500)
+  function (obj, varnames, data, diffchange=c("unit", "sd"), n=1, R=1500)
   {
       vars <- all.vars(formula(obj))[-1]
       if(any(!(vars %in% names(data)))){
@@ -1406,8 +1545,8 @@ mnlChange2 <-
         d0 <- list()
         if(is.numeric(data[[varnames[m]]])){
           d0[[1]] <- d0[[2]] <- data
-          tmp0 <- d0[[1]][[varnames[m]]]-(.5*delt)
-          tmp1 <- d0[[2]][[varnames[m]]]+(.5*delt)
+          tmp0 <- d0[[1]][[varnames[m]]]-(.5*delt*n)
+          tmp1 <- d0[[2]][[varnames[m]]]+(.5*delt*n)
           tmp0 <- ifelse(tmp0 < min(d0[[1]][[varnames[m]]], na.rm=TRUE), 
                          min(d0[[1]][[varnames[m]]], na.rm=TRUE), tmp0)
           tmp1 <- ifelse(tmp1 > max(d0[[2]][[varnames[m]]], na.rm=TRUE), 
@@ -1507,6 +1646,7 @@ mnlChange2 <-
 #' the minimum and maximum, \code{sd} gives plus and minus one-half standard
 #' deviation change around the median and \code{unit} gives a plus and minus
 #' one-half unit change around the median.
+#' @param n Number of \code{diffchange} units to change. 
 #' @param sim Logical indicating whether or not simulations should be done to
 #' generate confidence intervals for the difference.
 #' @param R Number of simulations.
@@ -1533,7 +1673,7 @@ mnlChange2 <-
 #' 
 ordChange <-
 function (obj, data, typical.dat = NULL, diffchange=c("range", "sd", "unit"),
- 	sim=TRUE, R=1500){
+ 	n=1, sim=TRUE, R=1500){
     vars <- all.vars(formula(obj))[-1]
     if(any(!(vars %in% names(data)))){
         vars <- vars[-which(!vars %in% names(data))]
@@ -1576,13 +1716,13 @@ function (obj, data, typical.dat = NULL, diffchange=c("range", "sd", "unit"),
         minmax[[vars[i]]] <- range(data[[vars[i]]], na.rm = TRUE)
 		}
 		if(mmc == "sd"){
-		    tmp <- median(data[[vars[i]]], na.rm = TRUE) + c(-.5,.5)*sd(data[[vars[i]]], na.rm=TRUE)
+		    tmp <- median(data[[vars[i]]], na.rm = TRUE) + c(-.5,.5)*n*sd(data[[vars[i]]], na.rm=TRUE)
 		    tmp[1] <- ifelse(tmp[1] < min(data[[vars[i]]], na.rm=TRUE), min(data[[vars[i]]], na.rm=TRUE), tmp[1])
 		    tmp[2] <- ifelse(tmp[2] > max(data[[vars[i]]], na.rm=TRUE), max(data[[vars[i]]], na.rm=TRUE), tmp[2])
 		    minmax[[vars[i]]] <- tmp
 		}
 		if(mmc == "unit"){
-        minmax[[vars[i]]] <- median(data[[vars[i]]], na.rm = TRUE) + c(-.5,.5)
+        minmax[[vars[i]]] <- median(data[[vars[i]]], na.rm = TRUE) + c(-.5,.5)*n
 		}
         meds[[vars[i]]] <- median(data[[vars[i]]], na.rm = TRUE)
     }
@@ -1703,6 +1843,7 @@ invisible(ret)
 #' calculate the discrete change. \code{sd} gives plus and minus one-half
 #' standard deviation change around the median and \code{unit} gives a plus and
 #' minus one-half unit change around the median.
+#' @param n Number of \code{diffchange} units to change. 
 #' @param R Number of simulations.
 #' @return A list with the following elements: \item{diffs}{A matrix of
 #' calculated first differences} \item{minmax}{A matrix of values that were
@@ -1726,7 +1867,7 @@ invisible(ret)
 #' ordChange2(polr.mod, "age", data=france, diffchange="sd")	
 #' 
 ordChange2 <- function (obj, varnames, data, diffchange=c("sd", "unit"),
-      R=1500){
+      n=1, R=1500){
     vars <- all.vars(formula(obj))[-1]
     if(any(!(vars %in% names(data)))){
         vars <- vars[-which(!vars %in% names(data))]
@@ -1757,8 +1898,8 @@ ordChange2 <- function (obj, varnames, data, diffchange=c("sd", "unit"),
         d0 <- list()
         if(is.numeric(data[[varnames[m]]])){
           d0[[1]] <- d0[[2]] <- data
-          tmp0 <- d0[[1]][[varnames[m]]]-(.5*delt)
-          tmp1 <- d0[[2]][[varnames[m]]]+(.5*delt)
+          tmp0 <- d0[[1]][[varnames[m]]]-(.5*delt*n)
+          tmp1 <- d0[[2]][[varnames[m]]]+(.5*delt*n)
           tmp0 <- ifelse(tmp0 < min(d0[[1]][[varnames[m]]], na.rm=TRUE), 
                          min(d0[[1]][[varnames[m]]], na.rm=TRUE), tmp0)
           tmp1 <- ifelse(tmp1 > max(d0[[2]][[varnames[m]]], na.rm=TRUE), 
@@ -3361,7 +3502,7 @@ if(type == "facs"){
 	if(!plot){
         res <- list(out = res, mainvar = facvar, givenvar = quantvar)
         class(res) <- "iqq"
-        print(res)
+        return(res)
 	}
 	if(plot){
 		rl <- range(c(res[, c("lower", "upper")]))
@@ -3412,7 +3553,7 @@ if(type == "slopes"){
 	names(qeff) <- faclevs
 	res <- list(out = data.frame(eff = qeff, se = qse, tstat=qtstats, pvalue=qpv, stringsAsFactors=TRUE), varcor = qvar, mainvar = quantvar, givenvar = facvar)
     class(res) <- "iqq"
-	print(res)
+	return(res)
 }
 if(plot){
 	intterm <- NULL
@@ -3677,6 +3818,7 @@ crTest <- function(model,
                    var=NULL, 
                    span.as = TRUE, 
                    span = 0.75, ...){
+  # Consistent with Fox (2016, 546)
     cl <- attr(terms(model), "dataClasses")
 	cl <- cl[which(cl != "factor")]
     mf <- model.frame(model)
@@ -3718,10 +3860,10 @@ lin.mods <- lapply(terms.list, function(z)lm(y ~ x, data=z))
 n <- nrow(model.matrix(model))
 lo.rss <- sapply(lo.mods, function(x)sum(residuals(x)^2))
 lm.rss <- sapply(lin.mods, function(x)sum(residuals(x)^2))
-d1a <- sapply(lo.mods, function(x)x$one.delta)
-d2a <- sapply(lo.mods, function(x)x$two.delta)
-denom.df <- d1a^2/d2a
-num.df <- (n-denom.df) - sapply(lin.mods, function(x)x$rank)
+lo.df <- sapply(lo.mods, function(x)x$trace.hat)
+lin.df <- sapply(lin.mods, function(x)x$rank)
+num.df <- lo.df-lin.df
+denom.df <-n-lo.df
 F.stats <- ((lm.rss-lo.rss)/num.df)/(lo.rss/denom.df)
 pvals <- p.adjust(pf(F.stats, num.df, denom.df, lower.tail=FALSE), method=adjust.method)
 out <- data.frame(
@@ -3814,18 +3956,28 @@ function(model, spfromto, n=10, adjust.method = "none", adjust.type = c("none", 
 #' 
 #' 
 #' @param data A data frame.
+#' @param numsd Number of standard deviations to divide by - defaults to 1. 
+#' @param nvals_fac Number of unique values required to standardize - variables with fewer than `nvals_fac` unique values will not be standardized. 
+#' @param exclude A character vector of names of variables to exclude from the standardization. 
 #' @return A data frame with standardized quantitative variables
 #' 
-#' @importFrom dplyr mutate_if
+#' @importFrom dplyr mutate across 
+#' @importFrom tidyselect vars_select_helpers
 #' 
 #' @export
 #' 
 #' @author Dave Armstrong
-scaleDataFrame <-function(data){
+scaleDataFrame <-function(data, numsd=1, nvals_fac = 11, exclude=NULL){
   isNum <- function(x){
-    !(all(x%in% c(0,1,NA)) | inherits(x, "factor") | inherits(x, "character"))
+    !(all(x%in% c(0,1,NA)) | inherits(x, "factor") | inherits(x, "character") | length(unique(na.omit(x))) < nvals_fac)
   }
-  newdat <- data %>% mutate_if(isNum, scale)
+  newdat <- data %>% mutate(across(vars_select_helpers$where(isNum), 
+                                   ~(.x-mean(.x, na.rm=TRUE))/(numsd*sd(.x, na.rm=TRUE))))
+  
+  if(!is.null(exclude)){
+    newdat <- newdat %>% 
+      mutate(across(all_of(exclude), ~ data$.x))
+  }
   newdat
 }
 
@@ -3920,11 +4072,31 @@ outXT <- function(obj, count=TRUE, prop.r = TRUE, prop.c = TRUE, prop.t = TRUE,
 #' @param varname Character string giving the variable name for which average
 #' effects are to be calculated.
 #' @param data Data frame used to fit \code{object}.
-#' @param change A string indicating the difference in predictor values to
+#' @param V An optional variance-covariance matrix for the coefficients, if 
+#' \code{NULL}, will be obtained through a call to \code{vcov}. 
+#' @param diffchange A string indicating the difference in predictor values to
 #' calculate the discrete change.  \code{sd} gives plus and minus one-half
 #' standard deviation change around the median and \code{unit} gives a plus and
 #' minus one-half unit change around the median.
+#' @param outcome For quantitative variables, should the difference over the range of chosen values be calculated 
+#' (the default) or should the maximum probability difference over the range be 
+#' calculated.  These will be the same for single-term quantitative variables, 
+#' but could be different for multi-term variables, like splines and polynomials. 
+#' @param n Number of \code{diffchange} to move. 
+#' @param baseline Character string representing the baseline to use for the 
+#' change.  It can be one of \code{"obs"}, in which case each observations value
+#' is used as the baseline or \code{"median"}, in which case the median is 
+#' used as a common baseline for all observations.
+#' @param catdiff String identifying how differences in factor variables
+#' is handled.  Options are \code{"all"} in which case all pairwise differences are
+#' returned, or \code{"biggest"} in which case the biggest difference is returned. 
 #' @param R Number of simulations to perform.
+#' @param adjust String identifying how range should be changed if it goes out of
+#' the bounds of the observed data.  Trimming will simply truncate the size of 
+#' the change to make it fit in bounds.  Shifting will shift the interval so 
+#' both ends are in bounds. If the shifted interval is wider than the range of
+#' the data, the change will be truncated to the range of the data. 
+#' @param ... Allows user to specify legacy argument \code{change}
 #' @return \item{res}{A vector of values giving the average and 95 percent
 #' confidence bounds} \item{ames}{The average change in predicted probability
 #' (across all N observations) for each of the R simulations.}
@@ -3939,36 +4111,108 @@ outXT <- function(obj, count=TRUE, prop.r = TRUE, prop.c = TRUE, prop.t = TRUE,
 #' data(france)
 #' left.mod <- glm(voteleft ~ male + age + retnat + 
 #' 	poly(lrself, 2), data=france, family=binomial)
-#' glmChange2(left.mod, "age", data=france, "sd")
+#' glmChange2(left.mod, "age", data=france, 
+#' diffchange="sd")
 #' 
 glmChange2 <-
-function (obj, varname, data, change=c("unit", "sd"), R=1500)
+function (obj, 
+          varname, 
+          data, 
+          V = NULL, 
+          diffchange=c("unit", "sd"), 
+          outcome = c("diff", "maxdiff"), 
+          baseline = c("obs", "median"), 
+          catdiff = c("biggest", "all"), 
+          n=1, 
+          R=1500, 
+          adjust=c("none", "shift", "trim"), 
+          ...)
 {
-    vars <- names(attr(terms(obj), "dataClasses"))[-1]
-    vars <- gsub("poly\\((.*?),.*?\\)", "\\1", vars)
-    vars <- gsub("bs\\((.*?),.*?\\)", "\\1", vars)
-    vars <- gsub("log\\((.*?),.*?\\)", "\\1", vars)
-    rn <- vars
-    var.classes <- sapply(vars, function(x) class(data[[x]]))
-    b <- mvrnorm(R, coef(obj), vcov(obj))
-    change <- match.arg(change)
-    if(!is.factor(data[[varname]])){
-    delt <- switch(change, unit = 1, sd = sd(data[[varname]],
-        na.rm = TRUE))
-    }else{
-      delt <- 1
-    }
-
-    if (is.numeric(data[[varname]])) {
-        d0 <- d1 <- data
-        tmp0 <- d0[[varname]] - (0.5 * delt)
+  el.args <- list(...)
+  n.el.args <- names(el.args)
+  if("change" %in% n.el.args){
+    diffchange <- do.call("[", el.args)["change"]
+  }
+  change <- match.arg(diffchange)
+  baseline <- match.arg(baseline)
+  adj <- match.arg(adjust)
+  outcome <- match.arg(outcome)
+  catdiff <- match.arg(catdiff)
+  allvars <- all.vars(formula(obj))
+  data <- data %>% select(all_of(allvars)) %>% na.omit
+  vars <- names(c(unlist(sapply(allvars, function(x)grep(x, attr(terms(obj), "term.labels"))))))
+  dv <- setdiff(allvars, vars)
+  if(any(!(vars %in% names(data)))){
+    vars <- vars[-which(!vars %in% names(data))]
+  }
+  rn <- vars
+  var.classes <- sapply(vars, function(x) class(data[[x]]))
+  if(is.null(V)){
+    V <- vcov(obj)
+  }
+  b <- MASS::mvrnorm(R, coef(obj), V)
+  if(!is.factor(data[[varname]])){
+  delt <- switch(change, unit = 1, sd = sd(data[[varname]],
+      na.rm = TRUE))*n
+  }else{
+    delt <- 1
+  }
+  if (is.numeric(data[[varname]])) {
+    tmpd1 <- as.list(data[1,] )
+    tmpd1[[varname]] <- seq(min(data[[varname]]), max(data[[varname]]), length=1000)
+    tmp2 <- do.call(data.frame, tmpd1)
+    tmpfit <- predict(obj, newdata=tmp2, type="link")
+    tmprg <- data.frame(x=tmpd1[[varname]], 
+                        fit = tmpfit)
+    d0 <- d1 <- data
+        if(baseline == "median"){
+          tmp0 <- median(d0[[varname]], na.rm=TRUE) - (0.5 * delt)
+          tmp1 <- median(d1[[varname]], na.rm=TRUE) + (0.5 * delt)
+        }else{
+          tmp0 <- d0[[varname]] - (0.5 * delt)
+          tmp1 <- d1[[varname]] + (0.5 * delt)
+        }
+      if(adj == "trim"){
         tmp0 <- ifelse(tmp0 < min(d0[[varname]], na.rm=TRUE), min(d0[[varname]], na.rm=TRUE), tmp0)
-        tmp1 <- d1[[varname]] + (0.5 * delt)
         tmp1 <- ifelse(tmp1 > max(d1[[varname]], na.rm=TRUE), max(d1[[varname]], na.rm=TRUE), tmp1)
+      }
+      if(adj == "shift"){
+        for(i in 1:length(tmp0)){
+          if(diff(c(tmp0[i], tmp1[i])) >= diff(range(d0[[varname]]))){
+            tmp0[i] <- min(d0[[varname]])
+            tmp1[i] <- max(d0[[varname]])
+          }else{
+            if(tmp0[i] < min(data[[varname]])){
+              tmp1[i] <- tmp1[i] + abs(diff(c(tmp0[i], min(data[[varname]])))) 
+              tmp0[i] <- tmp0[i] + abs(diff(c(tmp0[i], min(data[[varname]])))) 
+            }
+            if(tmp1[i] > max(data[[varname]])){
+              tmp0[i] <- tmp0[i] - abs(diff(c(tmp1[i], max(data[[varname]]))))
+              tmp1[i] <- tmp1[i] - abs(diff(c(tmp1[i], max(data[[varname]]))))
+            }
+          }
+        }
+      }
+        if(outcome == "maxdiff"){
+          t01 <- cbind(tmp0, tmp1)
+          tout <- t(apply(t01, 1, function(z){
+            w <- tmprg[which(tmprg$x >= z[1] & tmprg$x <= z[2]), ]
+            w <- w[order(w$fit), ]
+            w$x[c(1, nrow(w))]
+          }))
+          cmt <- colMeans(tout)
+          if(cmt[2] < cmt[1])tout <- tout[,c(2,1)]
+          tmp0 <- tout[,1]
+          tmp1 <- tout[,2]
+        }
         d0[[varname]] <- tmp0
         d1[[varname]] <- tmp1
-        X0 <- model.matrix(obj, data = d0)
-        X1 <- model.matrix(obj, data = d1)
+        tt <- terms(obj)
+        Terms <- delete.response(tt)
+        m0 <- model.frame(Terms, d0, xlev = obj$xlevels)
+        X0 <- model.matrix(Terms, m0, contrasts.arg = obj$contrasts)
+        m1 <- model.frame(Terms, d1, xlev = obj$xlevels)
+        X1 <- model.matrix(Terms, m1, contrasts.arg = obj$contrasts)
         p0 <- family(obj)$linkinv(X0 %*% t(b))
         p1 <- family(obj)$linkinv(X1 %*% t(b))
         diff <- p1 - p0
@@ -3977,7 +4221,8 @@ function (obj, varname, data, change=c("unit", "sd"), R=1500)
             nrow = 1)
         colnames(res) <- c("mean", "lower", "upper")
         rownames(res) <- varname
-        outres = list(res = res, ames=eff, avesamp = rowMeans(diff))
+        outres = list(res = res, ames=eff, avesamp = rowMeans(diff), 
+                      x0 = tmp0, x1=tmp1)
     }
     if (!is.numeric(data[[varname]]) & length(unique(na.omit(data[[varname]]))) ==
         2) {
@@ -3985,8 +4230,12 @@ function (obj, varname, data, change=c("unit", "sd"), R=1500)
         D0 <- D1 <- data
         D0[[varname]] <- factor(1, levels=1:2, labels=l)
         D1[[varname]] <- factor(2, levels=1:2, labels=l)
-        X0 <- model.matrix(formula(obj), data=D0)
-        X1 <- model.matrix(formula(obj), data=D1)
+        tt <- terms(obj)
+        Terms <- delete.response(tt)
+        m0 <- model.frame(Terms, D0, xlev = obj$xlevels)
+        X0 <- model.matrix(Terms, m0, contrasts.arg = obj$contrasts)
+        m1 <- model.frame(Terms, D1, xlev = obj$xlevels)
+        X1 <- model.matrix(Terms, m1, contrasts.arg = obj$contrasts)
         p0 <- family(obj)$linkinv(X0 %*% t(b))
         p1 <- family(obj)$linkinv(X1 %*% t(b))
         diff <- p1 - p0
@@ -4001,11 +4250,14 @@ function (obj, varname, data, change=c("unit", "sd"), R=1500)
     if (!is.numeric(data[[varname]]) & length(unique(na.omit(data[[varname]]))) >
         2) {
         l <- obj$xlevels[[varname]]
+        tt <- terms(obj)
+        Terms <- delete.response(tt)
         X.list <- list()
         for (j in 1:length(l)) {
             tmp <- data
             tmp[[varname]] <- factor(j, levels=1:length(l), labels=l)
-            X.list[[j]] <- model.matrix(formula(obj), data=tmp)
+            tmp.m <- model.frame(Terms, tmp, xlev = obj$xlevels)
+            X.list[[j]] <- model.matrix(Terms, tmp.m, contrasts.arg = obj$contrasts)
         }
         combs <- combn(length(X.list), 2)
         d.list <- list()
@@ -4021,7 +4273,14 @@ function (obj, varname, data, change=c("unit", "sd"), R=1500)
         rownames(res) <- c("mean", "lower", "upper")
         colnames(res) <- apply(cl[c(2, 1), ], 2, paste, collapse = "-")
         res <- t(res)
-        outres = list(res = res, ames=eff, avesamp = sapply(d.list, rowMeans))
+        asamp <- sapply(d.list, rowMeans)
+        if(catdiff == "biggest"){
+          w <- which.max(abs(res[,1]))
+          res <- res[w, , drop=FALSE]
+          eff <- eff[,w]
+          asamp <- asamp[,w]
+        }
+        outres = list(res = res, ames=eff, avesamp = asamp)
     }
     class(outres) <- "glmc2"
     print(outres)
@@ -4046,10 +4305,14 @@ function (obj, varname, data, change=c("unit", "sd"), R=1500)
 #' @param R Number of simulations to perform.
 #' @param nvals Number of evaluation points at which the average probability
 #' will be calculated.
-#' @param plot Logical indicating whether plot should be returned, or just data
-#' (if \code{FALSE}).
-#' @param returnSim Logical indicating whether simulated predicted
-#' probabilities should be returned.
+#' @param level Scalar giving the confidence level of the point-wise confidence 
+#' intervals. 
+#' @param ciType Type of confidence interval to be created.  If \code{"perc"}, a 
+#' percentile interval will be created from the distribution of effects.  If 
+#' \code{"normal"} a normal-theory interval will be calculated using the standard
+#' deviation of the fitted response from the simulation. 
+#' @param return Character string indicating what should be returned.  Multiple 
+#' entries are supported. 
 #' @param ... Other arguments to be passed down to \code{xyplot}.
 #' @return A plot or a data frame
 #' @author Dave Armstrong
@@ -4064,8 +4327,18 @@ function (obj, varname, data, change=c("unit", "sd"), R=1500)
 #' 	poly(lrself, 2, coefs=attr(p, "coefs")), data=france, family=binomial)
 #' aveEffPlot(left.mod, "age", data=france, plot=FALSE)
 #' 
-aveEffPlot <- function (obj, varname, data, R=1500, nvals=25, plot=TRUE, returnSim=FALSE, ...)
+aveEffPlot <- function (obj, 
+                        varname, 
+                        data, 
+                        R=1500, 
+                        nvals=25, 
+                        level=.95, 
+                        ciType = c("percent", "normal"), 
+                        return=c("ci", "plot", "sim")
+                        , ...)
 {
+  cit <- match.arg(ciType)
+  ret <- match.arg(return, several.ok=TRUE)
     vars <- all.vars(formula(obj))[-1]
     if(any(!(vars %in% names(data)))){
         vars <- vars[-which(!vars %in% names(data))]
@@ -4073,6 +4346,8 @@ aveEffPlot <- function (obj, varname, data, R=1500, nvals=25, plot=TRUE, returnS
     rn <- vars
     var.classes <- sapply(vars, function(x) class(data[[x]]))
 	b <- mvrnorm(R, coef(obj), vcov(obj), empirical=TRUE)
+	tt <- terms(obj)
+	Terms <- delete.response(tt)
 	if(is.numeric(data[[varname]])){
 		s <- seq(min(data[[varname]], na.rm=TRUE), max(data[[varname]], na.rm=TRUE), length=nvals)
 		dat.list <- list()
@@ -4080,73 +4355,77 @@ aveEffPlot <- function (obj, varname, data, R=1500, nvals=25, plot=TRUE, returnS
 			dat.list[[i]] <- data
 			dat.list[[i]][[varname]] <- s[i]
 		}
-		mm <- lapply(dat.list, function(x)model.matrix(obj, data=x))
-		probs <- lapply(mm, function(x)family(obj)$linkinv(x %*% t(b)))
-		cmprobs <- sapply(probs, colMeans)
-		ciprobs <- t(apply(cmprobs, 2, function(x)c(mean(x), quantile(x, c(.025,.975)))))
+	}
+	if(!is.numeric(data[[varname]])){
+	  s <- obj$xlevels[[varname]]
+	  dat.list <- list()
+	  for(j in 1:length(s)){
+	    dat.list[[j]] <- data
+	    dat.list[[j]][[varname]] <- factor(rep(j, nrow(data)), levels=1:length(s), labels=s)
+	  }
+	  s <- factor(1:length(s), labels=s)
+	}
+	s <- data.frame(s=s)
+	mm <- lapply(dat.list, function(x){
+		  m <- model.frame(Terms, x, xlev = obj$xlevels)
+		  model.matrix(Terms, m, contrasts.arg = obj$contrasts)})
+		cmprobs <- NULL
+		for(i in seq_along(mm)){
+		  cmprobs <- cbind(cmprobs, colMeans(family(obj)$linkinv(mm[[i]] %*% t(b))))
+		}
+		if(cit == "percent"){
+		  ciprobs <- t(apply(cmprobs, 2, function(x)
+		    c(mean(x), quantile(x, c((1-level)/2,1-(1-level)/2)))))
+		}
+		if(cit == "normal"){
+		  ciprobs <- t(apply(cmprobs, 2, function(x)
+		    c(mean(x), 
+		      mean(x) + qnorm((1-level)/2)*sd(x), 
+		      mean(x) + qnorm(1-(1-level)/2)*sd(x))))
+		}
 		colnames(ciprobs) <- c("mean", "lower", "upper")
 		ciprobs <- cbind(s, ciprobs)
 		tmp <- as.data.frame(ciprobs)
-		if(plot){
-			pl <- xyplot(mean ~ s, data=tmp,  xlab=varname, ylab="Predicted Value", ...,
-				lower=tmp$lower, upper=tmp$upper,
-				prepanel = prepanel.ci,
-				panel = function(x,y, lower, upper){
-					panel.lines(x,y, col="black", lty=1)
-					panel.lines(x, lower, col="black", lty=2)
-					panel.lines(x, upper, col="black", lty=2)
-			})
-			return(pl)
+		if("plot" %in% ret){
+		  if(is.numeric(data[[varname]])){
+		    pl <- xyplot(mean ~ s, data=tmp,  xlab=varname, ylab="Predicted Value", ...,
+		                 lower=tmp$lower, upper=tmp$upper,
+		                 prepanel = prepanel.ci,
+		                 panel = function(x,y, lower, upper){
+		                   panel.lines(x,y, col="black", lty=1)
+		                   panel.lines(x, lower, col="black", lty=2)
+		                   panel.lines(x, upper, col="black", lty=2)
+		                 })
+		  }
+		  if(!is.numeric(data[[varname]])){
+		    l <- levels(data[[varname]])
+		    pl <- xyplot(mean ~ s, data=tmp, xlab="", ylab="Predicted Value", ...,
+		                 lower=tmp$lower, upper=tmp$upper,
+		                 prepanel = prepanel.ci,
+		                 scales=list(x=list(at=1:length(l), labels=l)),
+		                 panel = function(x,y, lower, upper){
+		                   panel.points(x,y, col="black", lty=1, pch=16)
+		                   panel.segments(x, lower, x, upper, lty=1, col="black")
+		  })
+		  }
 		}
-		else{
-            if(returnSim){
-                colnames(cmprobs) <- s
-                class(cmprobs) <- "sims"
-                out <- list(cis = tmp, probs=cmprobs)
-                return(out)
-            }
-            else{
-		    	return(tmp)
-            }
-        }
-	}
-	if(!is.numeric(data[[varname]])){
-		l <- obj$xlevels[[varname]]
-		dat.list <- list()
-		for(j in 1:length(l)){
-            dat.list[[j]] <- data
-            dat.list[[j]][[varname]] <- factor(rep(j, nrow(data)), levels=1:length(l), labels=l)
-			dat.list[[j]] <- model.matrix(formula(obj), data=dat.list[[j]])
-		}
-		probs <- lapply(dat.list, function(x)family(obj)$linkinv(x %*% t(b)))
-		cmprobs <- sapply(probs, colMeans)
-		ciprobs <- t(apply(cmprobs, 2, function(x)c(mean(x), quantile(x, c(.025,.975)))))
-		colnames(ciprobs) <- c("mean", "lower", "upper")
-		tmp <- as.data.frame(ciprobs)
-		tmp$s <- factor(1:length(l), labels=l)
-		if(plot){
-			pl <- xyplot(mean ~ s, data=tmp, xlab="", ylab="Predicted Value", ...,
-				lower=tmp$lower, upper=tmp$upper,
-				prepanel = prepanel.ci,
-				scales=list(x=list(at=1:length(l), labels=l)),
-				panel = function(x,y, lower, upper){
-					panel.points(x,y, col="black", lty=1, pch=16)
-					panel.segments(x, lower, x, upper, lty=1, col="black")
-			})
-			return(pl)
-		}
-		else{
-            if(returnSim){
-                colnames(cmprobs) <- l
-                class(cmprobs) <- "sims"
-                out <- list(cis = tmp, probs=cmprobs)
-                return(out)
-            }
-            else{
-		    	return(tmp)
-            }
-        }
-	}
+  out <- list()
+  k <- 1
+  if("ci" %in% ret){
+    out[[k]] <- tmp
+    names(out)[k] <- "ci"
+    k <- k+1
+  }
+  if("plot" %in% ret){
+    out[[k]] <- pl
+    names(out)[k] <- "plot"
+    k <- k+1
+  }
+  if("sim" %in% ret){
+    out[[k]] <- cmprobs
+    names(out)[k] <- "sim"
+  }
+  return(out)
 }
 
 
@@ -4367,20 +4646,22 @@ NKnotsTest <- function(form, var, data, targetdf = 1, degree=3, min.knots=1,
 #' testLoess(linmod, lomod)
 #' 
 testLoess <- function(lmobj, loessobj, alpha=.05){
-   n <- nrow(model.matrix(lmobj))
+  ## From Fox (2016) p. 546
+     n <- nrow(model.matrix(lmobj))
    if(n != loessobj$n){
        stop("Models estimated on different numbers of observations")
    }
+n <- nobs(lmobj)
 rss0 <- sum(lmobj$residuals^2)
 rss1 <- sum(loessobj$residuals^2)
-d1a <- loessobj$one.delta; d2a <- loessobj$two.delta
-dfdenom <- d1a^2/d2a
-dfnum <- (n - dfdenom) - lmobj$rank
-F0 <- ((rss0-rss1)/dfnum)/
-    (rss1 / dfdenom)
+df.linmod <- lmobj$rank
+df.lomod <- loessobj$trace.hat
+df.res <- n-df.lomod
+F0 <- ((rss0-rss1)/(df.lomod-df.linmod))/
+    (rss1 / df.res)
 cat("F = ", round(F0, 2), "\n", sep="")
-pval <- pf(F0, dfnum, dfdenom, lower.tail=FALSE)
-cat("Pr( > F) = ", round(pval, 2), "\n", sep="")
+pval <- pf(F0, (df.lomod-df.linmod), df.res, lower.tail=FALSE)
+cat("Pr( > F) = ", sprintf("%.3f", pval), "\n", sep="")
 if(pval < alpha){
     cat("LOESS preferred to alternative\n")
 }
@@ -4467,7 +4748,7 @@ inspect.data.frame <- function(data, x, includeLabels=FALSE, ...){
 #' @param data A data frame.
 #' @param iter Number of samples for the MCMC sampler.
 #' @param chains Number of parallel chains to be run.
-#' @param alg Algorithm used to do sampling.  See \code{\link{stan}} for more
+#' @param alg Algorithm used to do sampling.  See \code{stan} for more
 #' details.
 #' @param ... Other arguments to be passed down to \code{stanfit}.
 #' @return A list with the following elements:
@@ -4493,7 +4774,11 @@ inspect.data.frame <- function(data, x, includeLabels=FALSE, ...){
 #' Young, Forrest, Jan de Leeuw and Yoshio Takane.  1976.  \sQuote{Regression
 #' with Qualitative and Quantitative Variables: An Alternating Least Squares
 #' Method with Optimal Scaling Features} Psychometrika, 41:502-529.
-balsos <- function(formula, data, iter=2500, chains = 1, alg = c("NUTS", "HMC", "Fixed_param"), ...){
+balsos <- function(formula, data, iter=2500, chains = 1, 
+                   alg = c("NUTS", "HMC", "Fixed_param"), ...){
+if(!requireNamespace("rstan")){
+  stop("The rstan package must be installed to use balsos.\n")
+}
 alg <- match.arg(alg)
 stancode <- "data{
   int N; //number of observations
@@ -4537,7 +4822,7 @@ y <- (y - min(y)) + 1L
 balsos.dat <- list(
   M=max(y), N=length(y), k = ncol(X), ybar = mean(y), sy = sd(y),
   y=y, X=X)
-fit <- stan(model_code=stancode, data = balsos.dat,
+fit <- rstan::stan(model_code=stancode, data = balsos.dat,
             iter = iter, chains = chains, algorithm=alg, ...)
 ret <- list(fit = fit, y=y, X=X, form=formula)
 class(ret) <- "balsos"
@@ -4975,12 +5260,14 @@ central <- function(x){
 #' 
 #' 
 #' @param x A object of class \code{diffci} produced by \code{\link{probci}}.
+#' @param type Which kind of result to print - predictions (\code{pr}) or 
+#'        pairwise differences in predictions (\code{pw}).
 #' @param digits How many digits to round output.
 #' @param filter A named list of values where the names indicate the variable
 #' to be filtered and the values in the vector indicate the values to include
 #' for the filtering variable.
 #' @param const A string identifying the name of the variable to be held
-#' constant across comparisons.
+#' constant across comparisons.  Only applies if \code{type = "pw"}. 
 #' @param onlySig Logical indicating whether all differes should be displayed
 #' or only those significant at the 95\% two-tailed level.
 #' @param ... Other arguments to be passed down to print, currently
@@ -5003,16 +5290,25 @@ central <- function(x){
 #' data(france)
 #' left.mod <- glm(voteleft ~ male + age + retnat + 
 #' 	poly(lrself, 2, raw=TRUE), data=france, family=binomial)
+#' data(france)
+#' left.mod <- glm(voteleft ~ male + age + retnat + 
+#'                   poly(lrself, 2, raw=TRUE), data=france, family=binomial)
 #' out <- probci(left.mod, france, numQuantVals=3, 
-#'     changeX=c("retnat", "lrself"))
+#'               changeX=c("retnat", "lrself"), calcPW = TRUE)
 #' print(out, filter=list(retnat=c("Better", "Worse")))
-#' print(out, filter=list(retnat=c("Better", "Worse")),
-#'      const="lrself")
-#' print(out, const="retnat")
-#' 
-print.diffci <- function(x, ..., digits=4, filter=NULL, const = NULL, onlySig=FALSE){
-    D <- x[[2]]
-    if(!is.null(filter)){
+#' print(out, type="pw", 
+#'       filter=list(retnat=c("Better", "Worse")),
+#'       const="lrself")
+print.diffci <- function(x, type = c("pr", "pw"), 
+                        ..., digits=4, filter=NULL, const = NULL, onlySig=FALSE){
+  type <- match.arg(type)
+  if(type == "pr"){
+    D <- x$plot.data
+  }else{
+    D <- x$`Difference in Predicted Probabilities`
+  }
+  if(type == "pw"){
+      if(!is.null(filter)){
         vn <- names(filter)
         w <- array(dim=c(nrow(D), length(vn)))
         for(i in 1:length(filter)){
@@ -5026,18 +5322,29 @@ print.diffci <- function(x, ..., digits=4, filter=NULL, const = NULL, onlySig=FA
         else{
             D <- D[w, ]
         }
-    }
-    if(onlySig){
-        sig <- which(sign(D$lower) == sign(D$upper))
-        if(length(sig) == 0){
-            stop("No observations matching filter conditions that are also significant")
-        }
-        else{
-            D <- D[sig, ]
-        }
       }
-    if(!is.null(const)){
-      D <- D[which(D[[paste0(const, "1")]] == D[[paste0(const, "2")]]), ]
+      if(!is.null(const)){
+        D <- D[which(D[[paste0(const, "1")]] == D[[paste0(const, "2")]]), ]
+      }
+  }else{
+    if(!is.null(filter)){
+      for(i in 1:length(filter)){
+        D <- D %>% filter(get(names(filter)[i]) %in% filter[[i]]) 
+      }
+      if(nrow(D) == 0){
+        stop("No observations matching filter conditions")
+      }
+    }
+  }
+  
+    if(onlySig){
+      sig <- which(sign(D$lower) == sign(D$upper))
+      if(length(sig) == 0){
+        stop("No observations matching filter conditions that are also significant")
+      }
+      else{
+        D <- D[sig, ]
+      }
     }
     cnd <- colnames(D)
     D2 <- array(dim=dim(D))
@@ -5096,6 +5403,7 @@ print.diffci <- function(x, ..., digits=4, filter=NULL, const = NULL, onlySig=FA
 #' constant at typical values.
 #' @param returnProbs Whether or not the vecot/matrix of predicted probabilities
 #' should be returned as well. 
+#' @param calcPW Should the pairwise differences be calculated?
 #' @return An data frame with the following variables: \item{variables}{The
 #' variables and the values at which they are held constant.  For example,
 #' \code{tmp1} would be the first value of \code{tmp} used in the probability
@@ -5122,7 +5430,16 @@ print.diffci <- function(x, ..., digits=4, filter=NULL, const = NULL, onlySig=FA
 #'     xvals = list(lrself = c(1,10)))
 #' out3
 #' 
-probci <- function(obj, data, .b = NULL, .vcov=NULL, changeX=NULL, numQuantVals=5, xvals = NULL, type=c("aveEff", "aveCase"), returnProbs=FALSE){
+probci <- function(obj, 
+                   data, 
+                   .b = NULL, 
+                   .vcov=NULL, 
+                   changeX=NULL, 
+                   numQuantVals=5, 
+                   xvals = NULL, 
+                   type=c("aveEff", "aveCase"), 
+                   returnProbs=FALSE, 
+                   calcPW = FALSE){
     type <- match.arg(type)
     vn <- changeX
     if(length(vn) == 0){stop("Need at least one variable to change")}
@@ -5168,30 +5485,32 @@ probci <- function(obj, data, .b = NULL, .vcov=NULL, changeX=NULL, numQuantVals=
         X <- model.matrix(formula(obj), data=alldat)
         probs <- t(family(obj)$linkinv(X %*% bmat))
         probci <- t(apply(probs, 2, quantile, c(.5,.025,.975)))[,,drop=FALSE]
-        dc <- combn(nrow(X), 2)
-        D <- matrix(0, nrow=nrow(X), ncol=ncol(dc))
-        D[cbind(dc[1,], 1:ncol(dc))] <- -1
-        D[cbind(dc[2,], 1:ncol(dc))] <- 1
-        diffprobs <- probs %*% D
-        ev <- sapply(1:ncol(egvals), function(i)paste(colnames(egvals)[i], "=", egvals[,i], sep=""))[,,drop=FALSE]
-        probn <- apply(ev, 1, paste, collapse=", ")
-        rownames(probci) <- probn
-        ev2 <- egvals[dc[2,], , drop=FALSE]
-        ev2 <- as.matrix(sapply(1:ncol(ev2), function(i)paste(colnames(ev2)[i], "=", ev2[,i], sep="")))
-        n1 <- apply(ev2, 1, paste, collapse=", ")
-
-        ev1 <- egvals[dc[1,], , drop=FALSE]
-        ev1 <- as.matrix(sapply(1:ncol(ev1), function(i)paste(colnames(ev1)[i], "=", ev1[,i], sep="")))
-        n2 <- apply(ev1, 1, paste, collapse=", ")
-        n <- paste("(", n1,  ") - (", n2, ")", sep="")
-        diffci <- t(apply(diffprobs, 2, quantile, c(.5,.025,.975)))[,,drop=FALSE]
-        rownames(diffci) <- n
-        colnames(diffci) <- colnames(probci) <- c("pred_prob", "lower", "upper")
-        tmp1 <- egvals[dc[1,], ]
-        tmp2 <- egvals[dc[2,], ]
-        names(tmp1) <- paste(names(tmp1), "1", sep="")
-        names(tmp2) <- paste(names(tmp2), "2", sep="")
-        diffci <- cbind(tmp1, tmp2, as.data.frame(diffci))[,,drop=FALSE]
+        if(calcPW){
+          dc <- combn(nrow(X), 2)
+          D <- matrix(0, nrow=nrow(X), ncol=ncol(dc))
+          D[cbind(dc[1,], 1:ncol(dc))] <- -1
+          D[cbind(dc[2,], 1:ncol(dc))] <- 1
+          diffprobs <- probs %*% D
+          ev <- sapply(1:ncol(egvals), function(i)paste(colnames(egvals)[i], "=", egvals[,i], sep=""))[,,drop=FALSE]
+          probn <- apply(ev, 1, paste, collapse=", ")
+          rownames(probci) <- probn
+          ev2 <- egvals[dc[2,], , drop=FALSE]
+          ev2 <- as.matrix(sapply(1:ncol(ev2), function(i)paste(colnames(ev2)[i], "=", ev2[,i], sep="")))
+          n1 <- apply(ev2, 1, paste, collapse=", ")
+  
+          ev1 <- egvals[dc[1,], , drop=FALSE]
+          ev1 <- as.matrix(sapply(1:ncol(ev1), function(i)paste(colnames(ev1)[i], "=", ev1[,i], sep="")))
+          n2 <- apply(ev1, 1, paste, collapse=", ")
+          n <- paste("(", n1,  ") - (", n2, ")", sep="")
+          diffci <- t(apply(diffprobs, 2, quantile, c(.5,.025,.975)))[,,drop=FALSE]
+          rownames(diffci) <- n
+          colnames(diffci) <- colnames(probci) <- c("pred_prob", "lower", "upper")
+          tmp1 <- egvals[dc[1,], ]
+          tmp2 <- egvals[dc[2,], ]
+          names(tmp1) <- paste(names(tmp1), "1", sep="")
+          names(tmp2) <- paste(names(tmp2), "2", sep="")
+          diffci <- cbind(tmp1, tmp2, as.data.frame(diffci))[,,drop=FALSE]
+        }
         probci <- as.data.frame(probci)
     }
     if(type == "aveEff"){
@@ -5208,35 +5527,41 @@ probci <- function(obj, data, .b = NULL, .vcov=NULL, changeX=NULL, numQuantVals=
         ev <- sapply(1:ncol(egvals), function(i)paste(colnames(egvals)[i], "=", egvals[,i], sep=""))[,,drop=FALSE]
         probn <- apply(ev, 1, paste, collapse=", ")
         rownames(probci) <- probn
-        dc <- combn(nrow(egvals), 2)
-        diffprobs <- matrix(NA, nrow=2500, ncol=ncol(dc))
-        for(i in 1:ncol(dc)){
-            diffprobs[,i] <- colMeans(probs[[dc[2,i]]] - probs[[dc[1,i]]])
+        if(calcPW){
+          dc <- combn(nrow(egvals), 2)
+          diffprobs <- matrix(NA, nrow=2500, ncol=ncol(dc))
+          for(i in 1:ncol(dc)){
+              diffprobs[,i] <- colMeans(probs[[dc[2,i]]] - probs[[dc[1,i]]])
+          }
+          ev2 <- egvals[dc[2,], , drop=FALSE]
+          ev2 <- as.matrix(sapply(1:ncol(ev2), function(i)paste(colnames(ev2)[i], "=", ev2[,i], sep="")))
+          n1 <- apply(ev2, 1, paste, collapse=", ")
+  
+          ev1 <- egvals[dc[1,], , drop=FALSE]
+          ev1 <- as.matrix(sapply(1:ncol(ev1), function(i)paste(colnames(ev1)[i], "=", ev1[,i], sep="")))
+          n2 <- apply(ev1, 1, paste, collapse=", ")
+          n <- paste("(", n1,  ") - (", n2, ")", sep="")
+          diffci <- t(apply(diffprobs, 2, quantile, c(.5,.025,.975)))[,,drop=FALSE]
+          rownames(diffci) <- n
+          colnames(diffci) <- colnames(probci) <- c("pred_prob", "lower", "upper")
+          tmp1 <- egvals[dc[1,], ]
+          tmp2 <- egvals[dc[2,], ]
+          names(tmp1) <- paste(names(tmp1), "1", sep="")
+          names(tmp2) <- paste(names(tmp2), "2", sep="")
+          diffci <- cbind(tmp1, tmp2, as.data.frame(diffci))[,,drop=FALSE]
         }
-        ev2 <- egvals[dc[2,], , drop=FALSE]
-        ev2 <- as.matrix(sapply(1:ncol(ev2), function(i)paste(colnames(ev2)[i], "=", ev2[,i], sep="")))
-        n1 <- apply(ev2, 1, paste, collapse=", ")
-
-        ev1 <- egvals[dc[1,], , drop=FALSE]
-        ev1 <- as.matrix(sapply(1:ncol(ev1), function(i)paste(colnames(ev1)[i], "=", ev1[,i], sep="")))
-        n2 <- apply(ev1, 1, paste, collapse=", ")
-        n <- paste("(", n1,  ") - (", n2, ")", sep="")
-        diffci <- t(apply(diffprobs, 2, quantile, c(.5,.025,.975)))[,,drop=FALSE]
-        rownames(diffci) <- n
-        colnames(diffci) <- colnames(probci) <- c("pred_prob", "lower", "upper")
-        tmp1 <- egvals[dc[1,], ]
-        tmp2 <- egvals[dc[2,], ]
-        names(tmp1) <- paste(names(tmp1), "1", sep="")
-        names(tmp2) <- paste(names(tmp2), "2", sep="")
-        diffci <- cbind(tmp1, tmp2, as.data.frame(diffci))[,,drop=FALSE]
         probci <- as.data.frame(probci)
     }
-    g <- grep("^tmp[1-2]", names(diffci))
-    if(length(g) == 2 & length(changeX) == 1){
+    res <- list("Predicted Probabilities"=probci, 
+                plot.data = cbind(egvals, probci))
+    if(calcPW){
+      g <- grep("^tmp[1-2]", names(diffci))
+      if(length(g) == 2 & length(changeX) == 1){
         names(diffci) <- gsub("tmp", changeX, names(diffci))
+      }
+      rownames(diffci) <- NULL
+      res[["Difference in Predicted Probabilities"]] <- diffci 
     }
-    rownames(diffci) <- NULL
-    res <- list("Predicted Probabilities"=probci, "Difference in Predicted Probabilities"=diffci, plot.data = cbind(egvals, probci))
     if(returnProbs){
       res$probs <- probs
     }
@@ -5676,10 +6001,16 @@ secondDiff <- function(obj, vars, data, method=c("AME", "MER"), vals = NULL, typ
         w1 <- which(l1 == vals[[vars[1]]][1])
         w2 <- which(l1 == vals[[vars[1]]][2])
         if(length(w1) == 0){
-          stop(glue("{vals[[vars[1]]][1]} not a level of {vars[1]}\n"))
+          stop(paste0(vals[[vars[1]]][1], 
+                      " not a level of ", 
+                      vars[1], 
+                      ".\n"))
         }
         if(length(w2) == 0){
-          stop(glue("{vals[[vars[1]]][2]} not a level of {vars[1]}\n"))
+          stop(paste0(vals[[vars[1]]][2], 
+                      " not a level of ", 
+                      vars[1], 
+                      ".\n"))
         }
         v1 <- factor(w1, levels=1:length(l1), labels=l1)
         v2 <- factor(w2, levels=1:length(l1), labels=l1)
@@ -5695,10 +6026,16 @@ secondDiff <- function(obj, vars, data, method=c("AME", "MER"), vals = NULL, typ
         w1 <- which(l1 == vals[[vars[2]]][1])
         w2 <- which(l1 == vals[[vars[2]]][2])
         if(length(w1) == 0){
-          stop(glue("{vals[[vars[2]]][1]} not a level of {vars[2]}\n"))
+          stop(paste0(vals[[vars[2]]][1], 
+                      " not a level of ", 
+                      vars[2], 
+                      ".\n"))
         }
         if(length(w2) == 0){
-          stop(glue("{vals[[vars2]][2]} not a level of {vars[2]}\n"))
+          stop(paste0(vals[[vars[2]]][2], 
+                      " not a level of ", 
+                      vars[2], 
+                      ".\n"))
         }
         v1 <- factor(w1, levels=1:length(l1), labels=l1)
         v2 <- factor(w2, levels=1:length(l1), labels=l1)
@@ -5791,7 +6128,7 @@ summary.secdiff <- function(object, ..., level=0.95, digits=3){
   type <- ifelse("ind" %in% names(object), "Average Marginal Effect", "Marginal Effect at Typical Values")
   cat("Second Difference Using the", type, "Approach\n\n")
   s <- c(mean(object$ave), quantile(object$ave, c(ll, ul)))
-  s <- sprintf(glue("%.{digits}f"), s)
+  s <- sprintf(paste0("%.", digits, "f"), s)
   if(type == "Average Marginal Effect"){
     cat("Overall: \n")
   }
@@ -5831,7 +6168,7 @@ plot.secdiff <- function(x, level=.95, ...){
       geom_segment(aes_string(x="x", xend="x", y="lower", yend="upper")) + 
       theme_bw() + 
       labs(x="", y="Second Difference") + 
-      ggtitle(glue("Plot of Second Differences\n{type} Approach"))
+      ggtitle(paste0("Plot of Second Differences\n", type, " Approach"))
   }
     if("ind" %in% names(x)){
     ind.df <- x$ind
@@ -5850,7 +6187,7 @@ plot.secdiff <- function(x, level=.95, ...){
                    size=1, col="red", alpha=.5) +
       theme_bw() + 
       labs(x="", y="Second Difference") + 
-      ggtitle(glue("Plot of Individual Second Differences\n{type} Approach"))
+      ggtitle(paste0("Plot of Individual Second Differences\n", type, " Approach"))
       }
 }
 
@@ -6220,8 +6557,8 @@ testNL.glm <- function(obj, var, transPower, polyOrder, plot=FALSE, ...){
                     pval = NA,
                     preferred = NA, stringsAsFactors=TRUE)
 
-  form1 <- glue("~ . -{var} + powerTrans({var}, {transPower})")
-  form2 <- glue("~ . -{var} + poly({var}, {polyOrder}, raw=TRUE)")
+  form1 <- paste0("~ . -", var, " + powerTrans(", var, ", ", transPower, ")")
+  form2 <- paste0("~ . -", var, " + poly(", var, ", ", polyOrder, ", raw=TRUE)")
   o1 <- update(obj, form1)
   t1 <- clarke_test(obj, o1)
   b <- min(t1$stat, t1$nobs - t1$stat)
@@ -6341,9 +6678,8 @@ testNL.lm <- testNL.glm
 #' @author Dave Armstrong
 effect_logistf <- function(var, obj, data, ...){
   v <- function(obj, complete=FALSE)return(obj$var)
-  form <- as.character(obj$formula)
-  form <- as.formula(paste(form[2], form[3], sep=form[1]))
-  tmp.mod <- glm(form, data=data, family=binomial)
+  form <- substitute(obj$formula)
+  tmp.mod <- glm(as.formula(form), data=data, family=binomial)
   tmp.mod$coefficients <- as.vector(obj$coefficients)
   tmp.mod$var <- obj$var
   e <- Effect(var, tmp.mod, vcov.=v, ...)
@@ -6514,100 +6850,101 @@ is.Numeric <- function (x, length.arg = Inf, integer.valued = FALSE, positive = 
 #' @param vars A character vector of variable names. 
 #' @param byvar A character string giving a variable name of a stratifying variable.  The summaries of the \code{vars} will be provided for each level of \code{byvar}. 
 #' @param convertFactors Logical indicating whether factors should be converted to numeric first and then summarised. 
-#' @param weight If using a data frame (rather than a survey design object), specifying the name of a weighting variable will for the function to create a survey design with probability weights equal to the weight variable and then use the survey design object to make the summary. 
-#' @param digits Number of digits to print in the output. 
 #'
 #' @importFrom stats weights 
 #' @importFrom survey svytotal
 #' @export
 #' 
 #' @return a vector of summary statistics for each variable or variable-group combination.
-sumStats <- function(data, vars, byvar=NULL, convertFactors=TRUE, weight=NULL, digits=3){
+sumStats <- function(data, vars, byvar=NULL, convertFactors=TRUE){
   UseMethod("sumStats")
 }
 
 #' @method sumStats data.frame
+#' @importFrom dplyr group_by summarise across tibble arrange everything
+#' @importFrom tidyr unnest unnest_wider
 #' @export
-sumStats.data.frame <- function(data, vars, byvar=NULL, convertFactors=TRUE, weight=NULL, digits=3){
-  if(is.null(weight)){
-    d <- svydesign(ids = ~1, strata=NULL, weights=~1, data=data, digits=3)
-  }else{
-    wform <- as.formula(paste0("~", weight))
-    d <- svydesign(ids = ~1, strata=NULL, weights=wform, data=data, digits=3)
+sumStats.data.frame <- function(data, vars, byvar=NULL, convertFactors=TRUE){
+## Thanks to John Santos for proposing a solution to a bug. 
+  if(convertFactors){
+    data <- data %>% 
+      mutate(across(all_of(vars), as.numeric))
   }
-  sumStats(d, vars=vars, byvar=byvar, convertFactors=convertFactors, weight=weight)
+  if(!is.null(byvar)){
+    data <- data %>% 
+    group_by(across(all_of(byvar)))
+  }
+  out <- data %>%
+    summarise(across(all_of(vars), ~list(tibble(
+      mean = mean(.x, na.rm=TRUE),
+      sd = sd(.x, na.rm=TRUE),
+      iqr = diff(quantile(.x, c(.25,.75), na.rm=TRUE)),
+      min = min(.x, na.rm=TRUE),
+      q25 = quantile(.x, .25, na.rm=TRUE),
+      q50 = median(.x, na.rm=TRUE),
+      q75 = quantile(.x, .75, na.rm=TRUE),
+      max = max(.x, na.rm=TRUE),
+      n = n(),
+      nNA = sum(is.na(.x)))
+    ))) %>%
+    pivot_longer(cols = all_of(vars), names_to = "variable") %>%
+    unnest_wider("value")
+  if(length(vars) > 1){
+    out <- out %>% arrange(vars("variable"), vars(byvar))
+  }
+  out %>% select("variable", all_of(byvar), everything())
 }
 
 #' @method sumStats survey.design
+#' @importFrom srvyr as_survey survey_mean survey_sd survey_quantile survey_count
 #' @export
-sumStats.survey.design <- function(data, vars, byvar=NULL, convertFactors=FALSE, weight=NULL, digits=3){
-  d <- data
-  if(convertFactors){
-    for(i in 1:length(vars)){
-      if(is.factor(d$variables[[vars[i]]])){
-        d$variables[[vars[i]]] <- as.numeric(d$variables[[vars[i]]])
-      }
-    }
+sumStats.survey.design <- function(data, vars, byvar=NULL, convertFactors=FALSE){
+  if(!inherits(data, "tbl_svy")){
+    d <- as_survey(data) 
+  }else{
+    d <- data
   }
-  if(is.null(byvar)){
-    out <- vector(mode="list", length=1)
-    forms <- lapply(vars, function(x)as.formula(paste0("~", x)))
-    means <- sapply(forms, function(x)as.vector(svymean(x, d, na.rm=TRUE)))
-    sds <- sapply(forms, function(x)sqrt(svyvar(x, d, na.rm=TRUE)[1]))
-    qtiles <- t(sapply(forms, function(x)svyquantile(x, d, quantiles=c(0,.25,.5,.75,1), na.rm=TRUE)))
-    iqr <- qtiles[,4]-qtiles[,2]
-    obs.mat <- as.matrix(!is.na(as.matrix(d$variables[,vars])))
-    obs.mat <- apply(obs.mat, 2, as.numeric)
-    if(is.null(weight)){
-      wtvec <- rep(1, nrow(d$variables))
-    }else {
-      wtvec <- weights(d)
+    if(convertFactors){
+      d %>% mutate(across(all_of(vars), as.numeric))
     }
-    n <- ceiling(c(wtvec %*% obs.mat))
-    na <- ceiling(c(wtvec %*% (1-obs.mat)))
-    tmpdf <- data.frame(group = "All Observations", variable= vars)
-    out[[1]] <- as.data.frame(cbind(round(cbind(means, sds, iqr, qtiles), digits=digits), n, na))
-    names(out[[1]]) <- c("Mean", "SD", "IQR", "0%", "25%", "50%", "75%", "100%", "n", "NA")
-    out[[1]] <- cbind(tmpdf, out[[1]])
-    rownames(out[[1]]) <- NULL
+    if(is.null(byvar)){
+      n <- d %>% 
+        survey_count()
+      nNA <- d %>% 
+        mutate(wts = weights(d)) %>% 
+        group_by(across(all_of(byvar))) %>% 
+        summarise(nwt = sum(.data$wts)) %>% 
+        ungroup %>% 
+        mutate(nNA = n$n - .data$nwt) 
+    }else{
+      n <- d %>% 
+        group_by(across(all_of(byvar))) %>% 
+        survey_count()
+      nNA <- d %>% 
+        mutate(wts = weights(d)) %>% 
+        group_by(across(all_of(byvar))) %>% 
+        summarise(nwt = sum(.data$wts)) %>% 
+        ungroup %>% 
+        mutate(nNA = n$n - .data$nwt) 
+    }
+    out <- d %>% 
+      ungroup %>% 
+      group_by(across(all_of(byvar))) %>% 
+      summarise(across(all_of(vars), ~list(tibble(
+        mean = survey_mean(.x, na.rm=TRUE)$coef,
+        sd = survey_sd(.x, na.rm=TRUE)$coef,
+        min = survey_quantile(.x, 0, na.rm=TRUE)$`_q00`, 
+        q25 = survey_quantile(.x, .25, na.rm=TRUE)$`_q25`, 
+        median = survey_quantile(.x, .5, na.rm=TRUE)$`_q50`, 
+        q75 = survey_quantile(.x, .75, na.rm=TRUE)$`_q75`, 
+        max = survey_quantile(.x, 1, na.rm=TRUE)$`_q100`
+      )))) %>% 
+      unnest(all_of(vars))
+    out$n <- n$n
+    out$nNA = nNA$nNA
+    out
   }
-  else{
-    if(!is.factor(d$variables[[byvar]])){
-      d$variables[[byvar]] <- as.factor(d$variables[[byvar]])
-    }
-    out <- vector(mode="list", length=length(vars))
-    forms <- NULL
-    for(i in 1:length(vars))forms <- c(forms, as.formula(paste0("~", vars[i])))
-    byform <- as.formula(paste0("~", byvar))
-    means <- lapply(forms, function(x)svyby(x, byform, d, svymean, na.rm=TRUE))
-    sds <- lapply(forms, function(x)svyby(x, byform, d, svyvar, na.rm=TRUE))
-    for(i in 1:length(sds))sds[[i]][,vars[i]] <- sqrt(sds[[i]][,vars[i]])
-    qtiles <- lapply(forms, function(x)svyby(x, byform, d, svyquantile, 
-                                             quantiles=c(0,.25,.5,.75,1), na.rm=TRUE, keep.var=FALSE))
-    iqr <- lapply(qtiles, function(x)x[,4]-x[,2])
-    n <- vector(mode="list", length=length(vars))
-    for(i in 1:length(n)){
-      d$variables$tmp <- ifelse(is.na(d$variables[[vars[i]]]), 0, 1)
-      n[[i]] <- svyby(~tmp, byform, d, svytotal)[,2]
-    }
-    na <- vector(mode="list", length=length(vars))
-    for(i in 1:length(n)){
-      d$variables$tmp <- ifelse(!is.na(d$variables[[vars[i]]]), 0, 1)
-      na[[i]] <- svyby(~tmp, byform, d, svytotal)[,2]
-    }
-    for(i in 1:length(out)){
-      out[[i]] <- cbind(round(cbind(means[[i]][,2], sds[[i]][,2], iqr[[i]], qtiles[[i]][,-1]), digits=digits), round(n[[i]]), round(na[[i]]))
-      colnames(out[[i]]) <- c("Mean", "SD", "IQR", "0%", "25%", "50%", 
-                              "75%", "100%", "n", "NA")
-      tmpdf <- data.frame(group = factor(1:length(rownames(means[[1]])), labels=rownames(means[[1]])), 
-                          variable= vars[i])
-      out[[i]] <- cbind(tmpdf, as.data.frame(out[[i]]))
-      rownames(out[[i]]) <- NULL
-    }
-  }
-  out <- do.call(rbind, out)
-  out
-}
+  
 
 #' Cross-Tabulation of Weighted or Unweighted Data
 #' 
@@ -6697,16 +7034,71 @@ xt.survey.design <- function(data, var, byvar=NULL, controlvar=NULL, weight=NULL
 #' @method xt data.frame
 #' @export
 xt.data.frame <- function(data, var, byvar=NULL, controlvar=NULL, weight=NULL,  ...){
-  if(is.null(weight)){
-    d <- svydesign(ids = ~1, strata=NULL, weights=~1, data=data, digits=3)
-    d$variables[["weight"]] <- 1
-    weight <- "weight"
-  }else{
-    wform <- as.formula(paste0("~", weight))
-    d <- svydesign(ids = ~1, strata=NULL, weights=wform, data=data, digits=3)
-  }
-  xt(d, var, byvar, controlvar, weight=weight, )
-  }
+  d <- data
+  tab <- list()
+  chi2 <- list()
+  stats <- list()
+  if(is.null(byvar)){
+    tmptab <- table(data[[var]], data[[byvar]])
+    tmptab <- tmptab %>% as.data.frame() %>% 
+      adorn_totals("row") %>%
+      adorn_percentages("col") %>% 
+      adorn_pct_formatting(rounding = "half up", digits = 0) %>%
+      adorn_ns()
+    chi2 <- NULL
+    tab[[1]] <- tmptab
+    chi2[[1]] <- NULL
+    stats[[1]] <- NULL
+  } else{
+    if(is.null(controlvar)){
+      tmptab <- table(d[[var]], d[[byvar]])
+      chi2[[1]] <- chisq.test(tmptab)
+      tmptab <- tmptab %>% 
+        as.data.frame() %>% 
+        as_tibble() %>% 
+        pivot_wider(names_from="Var2", values_from = "Freq") %>% 
+        as.data.frame  
+      attr(tmptab, "var_names") <- list(row = var, col = byvar)
+      tmptab <- tmptab %>% 
+        adorn_totals(c("row", "col")) %>%
+        adorn_percentages("col") %>% 
+        adorn_pct_formatting(rounding = "half up", digits = 0) %>%
+        adorn_ns() %>%
+        adorn_title("combined") 
+      tab[[1]] <- tmptab
+      stats[[1]] <- make_assoc_stats(d[[var]], d[[byvar]], weight=NULL, ...)
+    } else{
+      if(!is.null(levels(d[[controlvar]]))){
+        levs <- levels(d[[controlvar]])
+      } else{
+        levs <- unique(na.omit(d[[controlvar]]))
+      }
+      for(l in 1:length(levs)){
+        tmpd <- subset(d, d[[controlvar]] == levs[l])
+        tmptab <- table(d[[var]], d[[byvar]])
+        chi2[[l]] <- chisq.test(tmptab)
+        tmptab <- tmptab %>% 
+          as.data.frame() %>% 
+          as_tibble() %>% 
+          pivot_wider(names_from="Var2", values_from = "Freq") %>% 
+          as.data.frame  
+        attr(tmptab, "var_names") <- list(row = var, col = byvar)
+        tmptab <- tmptab %>% 
+          adorn_totals(c("row", "col")) %>%
+          adorn_percentages("col") %>% 
+          adorn_pct_formatting(rounding = "half up", digits = 0) %>%
+          adorn_ns() %>%
+          adorn_title("combined") 
+        tab[[l]] <- tmptab
+        stats[[l]] <- make_assoc_stats(tmpd[[var]], tmpd[[byvar]], weight=NULL, ...)
+      }
+      names(tab) <- levs
+    }
+  } 
+  res <- list(tab=tab, chisq=chi2, stats=stats)
+  class(res) <- "xt"
+  res
+}
 
 #' @method print xt
 #' @export
@@ -7757,4 +8149,91 @@ opt.span <- function(model, criterion = c("aicc", "gcv"),
   }
   result <- optimize(fn, span.range)
   return(list(span = result$minimum, criterion = result$objective))
+}
+
+#' Break Apart Model Formula
+#' 
+#' A sort of inverse of the \code{reformulate} function.
+#' 
+#' @param form A formula
+#' @param keep_env Logical indicating whether the formula's
+#' environment should be returned with the result
+#' 
+#' @description Works as a sort of inverse to \code{reformulate} 
+#' by breaking apart the formula into response and the term labels. 
+#' It also returns the variable names of all of the variables 
+#' implicated in the formula. 
+#' 
+#' @return A list with \code{termlabels} giving the rhs terms of the
+#' model, \code{response} give the lhs of the model, \code{env} optionally 
+#' giving the environment of the formula and \code{vars} a vector of the 
+#' variable names implicated in the formula
+#' 
+#' @export
+#'
+unformulate <- function(form, keep_env=FALSE){
+  rhs <- attr(terms(form), "term.labels")
+  vn <- all.vars(form)
+  l <- as.list(form)
+  if(length(l) == 2){
+    lhs <- NULL
+  }
+  if(length(l) == 3){
+    lhs <- as.character(l[[2]])
+  }
+  if(!(length(l) %in% 2:3)){
+    stop("formula must transform into a two- or three-element list\n")
+  }
+  res <- list(termlabels = rhs, response = lhs, vars = vn)
+  if(keep_env){
+    res$env <- environment(form)
+  }
+  res
+}
+
+#' Tidy Bootstrap Confidence Intervals 
+#' 
+#' Returns a tibble with confidence intervals for all parameters from a bootstrapping
+#' object estimated with the \code{boot()} function.  
+#' 
+#' @param obj An object of class \code{boot}. 
+#' @param type The type of confidence interval to be produced.  Unlike \code{boot.ci()}, 
+#' "all" is not an option. 
+#' @param conf The confidence level to be used for the interval. 
+#' @param indices The column numbers of \code{obj$t} to be used in the calculation. 
+#' if \code{NULL}, all columns are used. 
+#' @param term_names The names of the parameters to be used as identifiers in the tibble. 
+#' @param ... Other arguments to be passed down to \code{boot.ci()}
+#' 
+#' @return A tibble with the term name, estimate, lower and upper confidence bounds. 
+#' 
+#' @importFrom boot boot.ci
+#' @importFrom dplyr tibble
+#' @export
+tidy_boot_ci <- function(obj, 
+                         indices=NULL, 
+                         type=c("norm", "basic", "stud", "perc", "bca"), 
+                         conf=.95, 
+                         term_names = NULL, 
+                         ...){
+  last2 <- function(x)x[(length(x)-1):length(x)]
+  type <- match.arg(type)
+  if(is.null(term_names) | length(term_names) != ncol(obj$t)){
+    trms <- paste0("parameter", 1:ncol(obj$t))
+  }else{
+    trms <- term_names
+  }
+  if(is.null(indices)){
+    indices <- 1:ncol(obj$t)
+  }
+  cis <- sapply(indices, function(i){
+    x <- boot.ci(obj, index=i, type=type, ...)
+    cix <- x[[length(x)]]
+    last2(cix)
+  })
+  tibble(term = trms, 
+         estimate = obj$t0[indices], 
+         conf.low = cis[1,], 
+         conf.high = cis[2,])
+  
 }

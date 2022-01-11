@@ -7,10 +7,17 @@
 glmChange(
   obj,
   data,
+  V = NULL,
   typical.dat = NULL,
+  change.dat = NULL,
   diffchange = c("range", "sd", "unit"),
+  outcome = c("diff", "maxdiff"),
+  n = 1,
+  catdiff = c("biggest", "all"),
   sim = FALSE,
-  R = 1000
+  R = 1000,
+  qtiles = c(0.025, 0.975),
+  adjust = c("none", "shift", "trim")
 )
 }
 \arguments{
@@ -18,10 +25,19 @@ glmChange(
 
 \item{data}{Data frame used to fit \code{object}.}
 
+\item{V}{An optional variance-covariance matrix for the coefficients, if 
+\code{NULL}, will be obtained through a call to \code{vcov}.}
+
 \item{typical.dat}{Data frame with a single row containing values at which
 to hold variables constant when calculating first differences.  These values
 will be passed to \code{predict}, so factors must take on a single value,
 but have all possible levels as their levels attribute.}
+
+\item{change.dat}{A named list of values over which the variables of interest 
+will be changed.  If \code{NULL} or partially specified, unspecified variables
+will use \code{diffchange}.  If a categorical variable is specified in here, this 
+overrides the \code{catdiff} argument and only the specified contrast will be 
+generated.}
 
 \item{diffchange}{A string indicating the difference in predictor values to
 calculate the discrete change.  \code{range} gives the difference between
@@ -29,10 +45,30 @@ the minimum and maximum, \code{sd} gives plus and minus one-half standard
 deviation change around the median and \code{unit} gives a plus and minus
 one-half unit change around the median.}
 
+\item{outcome}{For quantitative variables, should the difference over the range of chosen values be calculated 
+(the default) or should the maximum probability difference over the range be 
+calculated.  These will be the same for single-term quantitative variables, 
+but could be different for multi-term variables, like splines and polynomials.}
+
+\item{n}{number of units of \code{diffchange} to move.  Only active for \code{unit}
+or \code{sd}.}
+
+\item{catdiff}{String identifying how differences in factor variables
+is handled.  Options are \code{"all"} in which case all pairwise differences are
+returned, or \code{"biggest"} in which case the biggest difference is returned.}
+
 \item{sim}{Logical indicating whether simulated confidence bounds on the
 difference should be calculated and presented.}
 
 \item{R}{Number of simulations to perform if \code{sim} is \code{TRUE}}
+
+\item{qtiles}{Quantiles to calculate if \code{sim=TRUE}.}
+
+\item{adjust}{String identifying how range should be changed if it goes out of
+the bounds of the observed data.  Trimming will simply truncate the size of 
+the change to make it fit in bounds.  Shifting will shift the interval so 
+both ends are in bounds. If the shifted interval is wider than the range of
+the data, the change will be truncated to the range of the data.}
 }
 \value{
 A list with the following elements: \item{diffs}{A matrix of

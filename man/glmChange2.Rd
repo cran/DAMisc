@@ -4,7 +4,20 @@
 \alias{glmChange2}
 \title{Maximal First Differences for Generalized Linear Models}
 \usage{
-glmChange2(obj, varname, data, change = c("unit", "sd"), R = 1500)
+glmChange2(
+  obj,
+  varname,
+  data,
+  V = NULL,
+  diffchange = c("unit", "sd"),
+  outcome = c("diff", "maxdiff"),
+  baseline = c("obs", "median"),
+  catdiff = c("biggest", "all"),
+  n = 1,
+  R = 1500,
+  adjust = c("none", "shift", "trim"),
+  ...
+)
 }
 \arguments{
 \item{obj}{A model object of class \code{glm}.}
@@ -14,12 +27,39 @@ effects are to be calculated.}
 
 \item{data}{Data frame used to fit \code{object}.}
 
-\item{change}{A string indicating the difference in predictor values to
+\item{V}{An optional variance-covariance matrix for the coefficients, if 
+\code{NULL}, will be obtained through a call to \code{vcov}.}
+
+\item{diffchange}{A string indicating the difference in predictor values to
 calculate the discrete change.  \code{sd} gives plus and minus one-half
 standard deviation change around the median and \code{unit} gives a plus and
 minus one-half unit change around the median.}
 
+\item{outcome}{For quantitative variables, should the difference over the range of chosen values be calculated 
+(the default) or should the maximum probability difference over the range be 
+calculated.  These will be the same for single-term quantitative variables, 
+but could be different for multi-term variables, like splines and polynomials.}
+
+\item{baseline}{Character string representing the baseline to use for the 
+change.  It can be one of \code{"obs"}, in which case each observations value
+is used as the baseline or \code{"median"}, in which case the median is 
+used as a common baseline for all observations.}
+
+\item{catdiff}{String identifying how differences in factor variables
+is handled.  Options are \code{"all"} in which case all pairwise differences are
+returned, or \code{"biggest"} in which case the biggest difference is returned.}
+
+\item{n}{Number of \code{diffchange} to move.}
+
 \item{R}{Number of simulations to perform.}
+
+\item{adjust}{String identifying how range should be changed if it goes out of
+the bounds of the observed data.  Trimming will simply truncate the size of 
+the change to make it fit in bounds.  Shifting will shift the interval so 
+both ends are in bounds. If the shifted interval is wider than the range of
+the data, the change will be truncated to the range of the data.}
+
+\item{...}{Allows user to specify legacy argument \code{change}}
 }
 \value{
 \item{res}{A vector of values giving the average and 95 percent
@@ -44,7 +84,8 @@ polynomials specified with the \code{poly} function.
 data(france)
 left.mod <- glm(voteleft ~ male + age + retnat + 
 	poly(lrself, 2), data=france, family=binomial)
-glmChange2(left.mod, "age", data=france, "sd")
+glmChange2(left.mod, "age", data=france, 
+diffchange="sd")
 
 }
 \author{
